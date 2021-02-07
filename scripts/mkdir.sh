@@ -1,0 +1,16 @@
+mkdir /mnt/nfsdir
+mkdir /mnt/nfs/gitlab
+mkdir /mnt/nfs/gitlab/config
+mkdir /mnt/nfs/gitlab/logs
+mkdir /mnt/nfs/gitlab/data
+mkdir /mnt/nfs/nextcloud
+mkdir /mnt/nfs/nextcloud/nextcloud-postgres-db
+mkdir /mnt/nfs/nextcloud/nextcloud-www
+mkdir /mnt/nfs/openproject
+mkdir /mnt/nfs/openproject/pgdata
+mkdir /mnt/nfs/openproject/static
+mkdir /mnt/nfs/pihole
+mkdir /mnt/nfs/pihole/etc-pihole
+mkdir /mnt/nfs/pihole/etc-dnsmasq.d
+mkdir /mnt/nfs/trilium
+mkdir /mnt/nfs/swag
