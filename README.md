@@ -75,3 +75,18 @@ DentropyCloud for Kubernetes is an attempt at making it as easy to install secur
     NAME        STATUS   ROLES                  AGE    VERSION        INTERNAL-IP      EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION     CONTAINER-RUNTIME
     localhost   Ready    control-plane,master   156m   v1.20.2+k3s1   172.105.22.152   <none>        Ubuntu 20.04.1 LTS   5.4.0-65-generic   containerd://1.4.3-k3s1
     ```
+
+
+6. Configure DNS
+
+7. Install cert-manager and cert issuer
+
+8. Install example app, nextcloud
+
+9. Configure backups
+
+    click [here](./docs/backups.md)
+
+10. Configure tor-controller
+
+    click [here](./docs/tor-controller.md)
