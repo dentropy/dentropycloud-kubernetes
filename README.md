@@ -102,7 +102,8 @@ DentropyCloud for Kubernetes is an attempt at making it as easy to install secur
 7. Configure nfs-provisioner
 
     ```
-    mkdir /mnt/nfsdir/provisioner
+    helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
+    helm repo update
     helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
         --set nfs.server=127.0.0.1 \
         --set nfs.path=/mnt/nfsdir/provisioner
@@ -141,11 +142,14 @@ DentropyCloud for Kubernetes is an attempt at making it as easy to install secur
     # Point trilium.$YOUR_DOMAIN.tld to your kubrenetes cluster
     helm repo add ohdearaugustin https://ohdearaugustin.github.io/charts/
     # helm show values ohdearaugustin/trilium-notes
+    echo "Please enter your domain name"
+    read YOUR_DOMAIN_NAME
+    sed -i -e "s/dentropydaemon.net/$YOUR_DOMAIN_NAME/g" ./kube-apps/trilium-notes/trilium-notes-cert.yaml
+    sed -i -e "s/dentropydaemon.net/$YOUR_DOMAIN_NAME/g" ./kube-apps/trilium-notes/trilium-notes-ingress.yaml
     kubectl apply -f ./kube-apps/trilium-notes/trilium-notes-cert.yaml
     kubectl apply -f ./kube-apps/trilium-notes/trilium-notes-ingress.yaml
     helm install -f kube-apps/trilium-notes/trilium-notes-values.yaml trilium-notes ohdearaugustin/trilium-notes
     ```
-
 
 11. Configure backups
 

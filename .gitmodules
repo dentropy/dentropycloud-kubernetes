@@ -1,3 +1,6 @@
 [submodule "kube-apps/nfs-subdir-external-provisioner"]
 	path = kube-apps/nfs-subdir-external-provisioner
 	url = https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner.git
+[submodule "kube-apps/taiga/helm-taiga"]
+	path = kube-apps/taiga/helm-taiga
+	url = https://github.com/mvitale1989/helm-taiga.git
