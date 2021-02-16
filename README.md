@@ -14,6 +14,7 @@ DentropyCloud for Kubernetes is an attempt at making it as easy to install secur
 
 ## Technologies
 
+* Ubuntu VPS
 * [kubernetes](https://kubernetes.io/docs/home/) cluster
     * Reccomended distribution [k3s.io](https://k3s.io/)
     * Currently configured to use [Traefik loadbalancer](https://doc.traefik.io/traefik/v1.7/user-guide/kubernetes/)
@@ -32,6 +33,13 @@ DentropyCloud for Kubernetes is an attempt at making it as easy to install secur
     cp /etc/rancher/k3s/k3s.yaml /home/$USER/k3s.yaml
     cd /home/$USER
     chown -R $USER:$USER .
+
+    # Configure firewall
+    sudo ufw default allow outgoing
+    sudo ufw default allow incoming
+    sudo ufw deny 2049 # For NFS
+    sudo ufw enable
+
     exit
     ```
 
@@ -99,11 +107,45 @@ DentropyCloud for Kubernetes is an attempt at making it as easy to install secur
         --set nfs.server=127.0.0.1 \
         --set nfs.path=/mnt/nfsdir/provisioner
     ```
+
+
 8. Configure DNS
+
+    Point domain name at IP address of VPS. 
+    
+    You can ue [freedns.afraid.org](https://freedns.afraid.org/) or [duckdns.org](http://www.duckdns.org/) to get a free domain
 
 9. Install cert-manager and cert issuer
 
+    ``` bash
+    kubectl create namespace cert-manager
+    helm repo add jetstack https://charts.jetstack.io
+    helm repo update
+    helm install \
+        cert-manager jetstack/cert-manager \
+        --namespace cert-manager \
+        --version v1.2.0 \
+        --set installCRDs=true
+    # Wait 30 seconds
+    kubectl get pods --namespace cert-manager
+    # Should return a bunch of pods
+    
+    kubectl apply -f ./kube-apps/cert-manager/cert-issuer-traefik-ingress.yaml
+    ```
+
+
+
 10. Install example app, trilium notes
+
+    ``` bash
+    # Point trilium.$YOUR_DOMAIN.tld to your kubrenetes cluster
+    helm repo add ohdearaugustin https://ohdearaugustin.github.io/charts/
+    # helm show values ohdearaugustin/trilium-notes
+    kubectl apply -f ./kube-apps/trilium-notes/trilium-notes-cert.yaml
+    kubectl apply -f ./kube-apps/trilium-notes/trilium-notes-ingress.yaml
+    helm install -f kube-apps/trilium-notes/trilium-notes-values.yaml trilium-notes ohdearaugustin/trilium-notes
+    ```
+
 
 11. Configure backups
 
