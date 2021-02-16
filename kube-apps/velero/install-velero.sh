@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "Enter domain or IP address of minio server"
+echo "Enter domain or IP address of s3 compatible storage server"
 read s3_server
 velero install \
     --provider aws \

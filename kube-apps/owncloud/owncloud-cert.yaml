@@ -6,7 +6,7 @@ metadata:
 spec:
   dnsNames:
     - owncloud.dentropydaemon.net
-  secretName: nextcloud-cert-tls
+  secretName: owncloud-cert-tls
   issuerRef:
     name: letsencrypt-cluster-issuer
     kind: ClusterIssuer
