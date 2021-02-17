@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: gitea-cert
+  namespace: default
+spec:
+  dnsNames:
+    - gitea.dentropydaemon.net
+  secretName: gitea-cert-tls
+  issuerRef:
+    name: letsencrypt-cluster-issuer
+    kind: ClusterIssuer
