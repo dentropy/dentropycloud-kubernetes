@@ -21,7 +21,7 @@ case $input in
  ;;
 esac
 
-read -r -p "Would you like to use self signed certificates [Y/n] " input
+read -r -p "Would you like to install example app trilium-notes [Y/n] " input
 # https://tecadmin.net/bash-script-prompt-to-confirm-yes-no/
 case $input in
     [yY][eE][sS]|[yY])
