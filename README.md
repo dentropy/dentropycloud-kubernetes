@@ -144,8 +144,8 @@ DentropyCloud for Kubernetes is an attempt at making it as easy to install secur
     # helm show values ohdearaugustin/trilium-notes
     echo "Please enter your domain name"
     read YOUR_DOMAIN_NAME
-    sed -i -e "s/dentropydaemon.net/$YOUR_DOMAIN_NAME/g" ./kube-apps/trilium-notes/trilium-notes-cert.yaml
-    sed -i -e "s/dentropydaemon.net/$YOUR_DOMAIN_NAME/g" ./kube-apps/trilium-notes/trilium-notes-ingress.yaml
+    sed -i -e "s/trilium.dentropydaemon.net/$YOUR_DOMAIN_NAME/g" ./kube-apps/trilium-notes/trilium-notes-cert.yaml
+    sed -i -e "s/trilium.dentropydaemon.net/$YOUR_DOMAIN_NAME/g" ./kube-apps/trilium-notes/trilium-notes-ingress.yaml
     kubectl apply -f ./kube-apps/trilium-notes/trilium-notes-cert.yaml
     kubectl apply -f ./kube-apps/trilium-notes/trilium-notes-ingress.yaml
     helm install -f kube-apps/trilium-notes/trilium-notes-values.yaml trilium-notes ohdearaugustin/trilium-notes
