@@ -12,7 +12,7 @@ spec:
   tls:
   - hosts:
     - owncloud.dentropydaemon.net
-    secretName: oencloud-cert-tls
+    secretName: owncloud-cert-tls
   rules:
     - host: owncloud.dentropydaemon.net
       http:

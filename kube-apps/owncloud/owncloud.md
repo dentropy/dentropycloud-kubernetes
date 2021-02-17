@@ -1,3 +1,3 @@
-helm install -f owncloud-values.yaml owncloud bitnami/owncloud
+# Owncloud
 
-helm upgrade -f owncloud-values.yaml owncloud bitnami/owncloud
+[ownCloud Cloud Hosting, ownCloud Installer, Docker Container and VM](https://bitnami.com/stack/owncloud)
