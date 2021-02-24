@@ -1,0 +1,28 @@
+# HelloPod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: openproject-pod
+  labels:
+    app: openproject-pod
+spec:
+  containers:
+  - name: openproject-container
+    image: docker.io/openproject/community:10
+    env:
+    - name: "SECRET_KEY_BASE"
+      value: "monthtapeyellow"
+    ports:
+      - containerPort: 80
+    volumeMounts:
+    - name: openproject-pgdata
+      mountPath: /var/openproject/pgdata
+    - name: openproject-data
+      mountPath: /var/openproject/assets
+  volumes:
+  - name: openproject-pgdata
+    persistentVolumeClaim:
+      claimName: openproject-pgdata
+  - name: openproject-data
+    persistentVolumeClaim:
+      claimName: openproject-data

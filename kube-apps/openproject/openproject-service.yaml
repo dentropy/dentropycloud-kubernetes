@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: openproject-service
+spec:
+  selector:
+    app:  openproject-pod
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
