@@ -70,7 +70,6 @@ sudo apt install -y git
 
 echo "git cloning git repo"
 git clone https://gitlab.com/dentropy/Dentropycloud-Kubernetes.git
-cd Dentropycloud-Kubernetes
 
 echo "Install kubernetes, k3s.io distribution"
 sudo curl -sfL https://get.k3s.io |  INSTALL_K3S_VERSION=v1.19.7+k3s1 sh -
@@ -132,5 +131,5 @@ else
 fi
 
 if $INSTALL_EXAMPLE_APP; then
-    cd ./kube-apps/trilium-notes && bash install-trilium-notes.sh
+    cd Dentropycloud-Kubernetes/kube-apps/trilium-notes && bash install-trilium-notes.sh
 fi
