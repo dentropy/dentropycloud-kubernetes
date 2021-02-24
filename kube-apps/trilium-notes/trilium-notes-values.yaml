@@ -36,12 +36,14 @@ service:
 
 dataDir: /srv/trilium-data
 
+
 persistentVolume:
   enabled: true
-  accessMode: nfs-client
+  accessModes:
     - ReadWriteOnce
   annotations: {}
   size: 2Gi
+  storageClass: "nfs-client"
 
 ingress:
   enabled: true
