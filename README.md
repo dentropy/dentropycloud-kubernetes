@@ -26,7 +26,7 @@ DentropyCloud for Kubernetes is an attempt at making it as easy to install secur
 For those that like to live [dangerously](http://tserong.github.io/sudo-wget/) there exists a one line command, listed below, whcih configure everything for you.
 
 ``` bash
-wget https://gitlab.com/dentropy/Dentropycloud-Kubernetes/-/raw/master/server-install.sh && sudo bash ./server-install.sh
+wget https://gitlab.com/dentropy/Dentropycloud-Kubernetes/-/raw/master/server-install.sh && bash ./server-install.sh
 ```
 
 For Manual install click [here](./docs/manual-install.md)

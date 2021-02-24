@@ -1,5 +1,8 @@
 #!/bin/bash
 
+echo "We need sudo access for later"
+sudo echo "Thanks"
+
 function get_env_from_user {
     echo "Please enter your domain name"
     read YOUR_DOMAIN_NAME
@@ -66,13 +69,10 @@ echo "Insatlling git"
 sudo apt install -y git
 
 echo "git cloning git repo"
-cd $HOME
 git clone https://gitlab.com/dentropy/Dentropycloud-Kubernetes.git
-cd Dentropycloud-kubernetes
 
 echo "Install kubernetes, k3s.io distribution"
 sudo curl -sfL https://get.k3s.io |  INSTALL_K3S_VERSION=v1.19.7+k3s1 sh -
-sleep 10
 sudo cp /etc/rancher/k3s/k3s.yaml $HOME/k3s.yaml
 cd $HOME
 sudo chown -R $USER:$USER .
@@ -86,7 +86,7 @@ sudo apt install -y nfs-kernel-server
 sudo mkdir -p /mnt/nfsdir
 sudo chown nobody:nogroup /mnt/nfsdir
 sudo chmod 777 /mnt/nfsdir
-echo "/mnt/nfsdir -async,no_subtree_check *(rw,insecure,sync,no_subtree_check,no_root_squash)" | sudo tee /etc/exports
+echo "/mnt/nfsdir    *(rw,sync,no_subtree_check,no_root_squash)" | sudo tee /etc/exports
 sudo exportfs
 sudo systemctl restart nfs-kernel-server
 
@@ -130,6 +130,6 @@ else
     sudo kubectl apply -f ./kube-apps/cert-manager/cert-issuer-traefik-ingress.yaml
 fi
 
-if $LETSENCRYPT_EMAIL; then
-    cd ./kube-apps/trilium-notes && bash install-trilium-notes.sh
+if $INSTALL_EXAMPLE_APP; then
+    cd Dentropycloud-Kubernetes/kube-apps/trilium-notes && bash install-trilium-notes.sh
 fi
