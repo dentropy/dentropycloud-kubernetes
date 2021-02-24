@@ -122,6 +122,7 @@ sleep 30
 # kubectl get pods --namespace cert-manager
 # Should return a bunch of pods
 
+cp .env Dentropycloud-Kubernetes
 echo "Configuring certificate issuer"
 cd Dentropycloud-Kubernetes/kube-apps/cert-manager
 if $USE_SELF_SIGNED; then
