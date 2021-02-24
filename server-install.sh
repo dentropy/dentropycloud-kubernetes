@@ -36,6 +36,12 @@ case $input in
  ;;
 esac
 
+echo "Configuring Firewall"
+sudo ufw default allow outgoing
+sudo ufw default allow incoming
+sudo ufw deny 2049 # For NFS
+sudo ufw enable
+
 
 echo "Updating Packages"
 sudo apt-get -y update
@@ -44,22 +50,18 @@ echo "Insatlling git"
 sudo apt install -y git
 
 echo "git cloning git repo"
-cd 
+cd $HOME
 git clone https://gitlab.com/dentropy/Dentropycloud-Kubernetes.git
 cd Dentropycloud-kubernetes
 
 echo "Install kubernetes, k3s.io distribution"
 sudo curl -sfL https://get.k3s.io |  INSTALL_K3S_VERSION=v1.19.7+k3s1 sh -
-mkdir /home/root
-sudo cp /etc/rancher/k3s/k3s.yaml /home/$USER/k3s.yaml
-cd /home/$USER
-chown -R $USER:$USER .
+sudo cp /etc/rancher/k3s/k3s.yaml $HOME/k3s.yaml
+cd $HOME
+sudo chown -R $USER:$USER .
+mkdir .kube
+cp $HOME/k3s.yaml $HOME/.kube/config
 
-echo "Configuring Firewall"
-sudo ufw default allow outgoing
-sudo ufw default allow incoming
-sudo ufw deny 2049 # For NFS
-sudo ufw enable
 
 echo "Installing NFS server on localhost"
 sudo apt -y update
@@ -67,7 +69,7 @@ sudo apt install -y nfs-kernel-server
 sudo mkdir -p /mnt/nfsdir
 sudo chown nobody:nogroup /mnt/nfsdir
 sudo chmod 777 /mnt/nfsdir
-echo "/mnt/nfsdir -async,no_subtree_check *(rw,insecure,sync,no_subtree_check,no_root_squash)" >  /etc/exports
+echo "/mnt/nfsdir -async,no_subtree_check *(rw,insecure,sync,no_subtree_check,no_root_squash)" | sudo tee /etc/exports
 sudo exportfs
 sudo systemctl restart nfs-kernel-server
 
@@ -89,7 +91,7 @@ helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs
     --set nfs.path=/mnt/nfsdir/provisioner
 
 echo "Installing cert-manager"
-kubectl create namespace cert-manager
+sudo kubectl create namespace cert-manager
 helm repo add jetstack https://charts.jetstack.io
 helm repo update
 helm install \
@@ -106,9 +108,9 @@ sleep 30
 echo "Configuring certificate issuer"
 if USE_SELF_SIGNED; then
     sed -i -e "s/personinternet@protonmail.com/$LETSENCRYPT_EMAIL/g" ./kube-apps/cert-manager/cert-issuer-traefik-ingress.yaml
-    kubectl apply -f ./kube-apps/cert-manager/cert-issuer-self-signed.yaml
+    sudo kubectl apply -f ./kube-apps/cert-manager/cert-issuer-self-signed.yaml
 else
-    kubectl apply -f ./kube-apps/cert-manager/cert-issuer-traefik-ingress.yaml
+    sudo kubectl apply -f ./kube-apps/cert-manager/cert-issuer-traefik-ingress.yaml
 fi
 
 if INSTALL_EXAMPLE_APP; then
@@ -116,6 +118,6 @@ if INSTALL_EXAMPLE_APP; then
     helm repo update
     sed -i -e "s/trilium.dentropydaemon.net/$YOUR_DOMAIN_NAME/g" ./kube-apps/trilium-notes/trilium-notes-cert.yaml
     sed -i -e "s/trilium.dentropydaemon.net/$YOUR_DOMAIN_NAME/g" ./kube-apps/trilium-notes/trilium-notes-ingress.yaml
-    kubectl apply -f ./kube-apps/trilium-notes/trilium-notes-cert.yaml
-    kubectl apply -f ./kube-apps/trilium-notes/trilium-notes-ingress.yaml
+    sudo kubectl apply -f ./kube-apps/trilium-notes/trilium-notes-cert.yaml
+    sudo kubectl apply -f ./kube-apps/trilium-notes/trilium-notes-ingress.yaml
     helm install -f kube-apps/trilium-notes/trilium-notes-values.yaml trilium-notes ohdearaugustin/trilium-notes
