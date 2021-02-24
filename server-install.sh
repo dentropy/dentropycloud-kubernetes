@@ -1,40 +1,56 @@
 #!/bin/bash
 
-echo "Please enter your domain name"
-read YOUR_DOMAIN_NAME
+function get_env_from_user {
+    echo "Please enter your domain name"
+    read YOUR_DOMAIN_NAME
 
-read -r -p "Would you like to use self signed certificates [Y/n] " input
-# https://tecadmin.net/bash-script-prompt-to-confirm-yes-no/
-case $input in
-    [yY][eE][sS]|[yY])
- USE_SELF_SIGNED=true
- echo "You selected use self signed certificates"
- ;;
+    # https://tecadmin.net/bash-script-prompt-to-confirm-yes-no/
+    read -r -p "Would you like to use self signed certificates [Y/n] " input
+    case $input in 
+    [yY][eE][sS]|[yY] )
+        echo "You selected use self signed certificates"
+        USE_SELF_SIGNED=true
+        CERT_ISSUER=selfsigned-issuer
+    ;;
     [nN][oO]|[nN])
- echo "You selected to use signed certificates"
- echo "Please enter email you would like to use with Let's Encrypt"
- read LETSENCRYPT_EMAIL
-       ;;
+        echo "You selected to use signed certificates"
+        echo "Please enter email you would like to use with Let's Encrypt"
+        read LETSENCRYPT_EMAIL
+        echo LETSENCRYPT_EMAIL=$LETSENCRYPT_EMAIL >> .env
+        CERT_ISSUER=letsencrypt-staging
+    ;;
     *)
- echo "Invalid input..."
- exit 1
- ;;
-esac
+    echo "Invalid input..."
+    exit 1
+    ;;
+    esac
+    echo CERT_ISSUER=$CERT_ISSUER >> .env
+    echo YOUR_DOMAIN_NAME=$YOUR_DOMAIN_NAME >> .env
+    read -r -p "Would you like to install example app trilium-notes [Y/n] " input
+    case $input in
+    [yY][eE][sS]|[yY])
+        INSTALL_EXAMPLE_APP=true
+    ;;
+    [nN][oO]|[nN])
+        INSTALL_EXAMPLE_APP=false
+    ;;
+    *)
+    echo "Invalid input..."
+    exit 1
+    ;;
+    esac
 
-read -r -p "Would you like to install example app trilium-notes [Y/n] " input
-# https://tecadmin.net/bash-script-prompt-to-confirm-yes-no/
-case $input in
-    [yY][eE][sS]|[yY])
- INSTALL_EXAMPLE_APP=true
- ;;
-    [nN][oO]|[nN])
- INSTALL_EXAMPLE_APP=false
-       ;;
-    *)
- echo "Invalid input..."
- exit 1
- ;;
-esac
+    echo INSTALL_EXAMPLE_APP=$INSTALL_EXAMPLE_APP >> .env
+}
+
+FILE=.env
+if test -f "$FILE"; then
+    echo "loaded .env file "
+    export $(cat .env | xargs)
+else
+    get_env_from_user
+fi
+
 
 echo "Configuring Firewall"
 sudo ufw default allow outgoing
@@ -56,6 +72,7 @@ cd Dentropycloud-kubernetes
 
 echo "Install kubernetes, k3s.io distribution"
 sudo curl -sfL https://get.k3s.io |  INSTALL_K3S_VERSION=v1.19.7+k3s1 sh -
+sleep 10
 sudo cp /etc/rancher/k3s/k3s.yaml $HOME/k3s.yaml
 cd $HOME
 sudo chown -R $USER:$USER .
@@ -113,11 +130,6 @@ else
     sudo kubectl apply -f ./kube-apps/cert-manager/cert-issuer-traefik-ingress.yaml
 fi
 
-if INSTALL_EXAMPLE_APP; then
-    helm repo add ohdearaugustin https://ohdearaugustin.github.io/charts/
-    helm repo update
-    sed -i -e "s/trilium.dentropydaemon.net/$YOUR_DOMAIN_NAME/g" ./kube-apps/trilium-notes/trilium-notes-cert.yaml
-    sed -i -e "s/trilium.dentropydaemon.net/$YOUR_DOMAIN_NAME/g" ./kube-apps/trilium-notes/trilium-notes-ingress.yaml
-    sudo kubectl apply -f ./kube-apps/trilium-notes/trilium-notes-cert.yaml
-    sudo kubectl apply -f ./kube-apps/trilium-notes/trilium-notes-ingress.yaml
-    helm install -f kube-apps/trilium-notes/trilium-notes-values.yaml trilium-notes ohdearaugustin/trilium-notes
+if $LETSENCRYPT_EMAIL; then
+    cd ./kube-apps/trilium-notes && bash install-trilium-notes.sh
+fi

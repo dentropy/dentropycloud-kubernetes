@@ -23,10 +23,10 @@ DentropyCloud for Kubernetes is an attempt at making it as easy to install secur
 
 ## Instructions
 
-For automated install run command below on your server
+For those that like to live [dangerously](http://tserong.github.io/sudo-wget/) there exists a one line command, listed below, whcih configure everything for you.
 
 ``` bash
-wget -O - https://gitlab.com/dentropy/Dentropycloud-Kubernetes/-/raw/master/server-install.sh | bash
+wget https://gitlab.com/dentropy/Dentropycloud-Kubernetes/-/raw/master/server-install.sh && sudo bash ./server-install.sh
 ```
 
 For Manual install click [here](./docs/manual-install.md)
@@ -34,3 +34,12 @@ For Manual install click [here](./docs/manual-install.md)
 To configure backups click [here](./docs/backups.md)
 
 To configure tor-controller click [here](./docs/tor-controller.md)
+
+## Remote Management
+
+``` bash
+cd ~/.kube
+scp USER@VPS_IP_ADDRESS:~/k3s.yaml .
+sed -i -e "s/127.0.0.1/VPS_IP_ADDRESS/g" ./k3s.yaml
+cp k3s.yaml config
+```
