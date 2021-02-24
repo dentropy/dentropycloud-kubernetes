@@ -1,5 +1,8 @@
 #!/bin/bash
 
+echo "We need sudo access for later"
+sudo echo "Thanks"
+
 function get_env_from_user {
     echo "Please enter your domain name"
     read YOUR_DOMAIN_NAME
@@ -66,13 +69,11 @@ echo "Insatlling git"
 sudo apt install -y git
 
 echo "git cloning git repo"
-cd $HOME
 git clone https://gitlab.com/dentropy/Dentropycloud-Kubernetes.git
-cd Dentropycloud-kubernetes
+cd Dentropycloud-Kubernetes
 
 echo "Install kubernetes, k3s.io distribution"
 sudo curl -sfL https://get.k3s.io |  INSTALL_K3S_VERSION=v1.19.7+k3s1 sh -
-sleep 10
 sudo cp /etc/rancher/k3s/k3s.yaml $HOME/k3s.yaml
 cd $HOME
 sudo chown -R $USER:$USER .
@@ -130,6 +131,6 @@ else
     sudo kubectl apply -f ./kube-apps/cert-manager/cert-issuer-traefik-ingress.yaml
 fi
 
-if $LETSENCRYPT_EMAIL; then
+if $INSTALL_EXAMPLE_APP; then
     cd ./kube-apps/trilium-notes && bash install-trilium-notes.sh
 fi
