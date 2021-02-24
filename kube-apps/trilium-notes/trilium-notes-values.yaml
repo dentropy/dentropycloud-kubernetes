@@ -52,14 +52,16 @@ ingress:
     traefik.ingress.kubernetes.io/frontend-entry-points: http,https
     traefik.ingress.kubernetes.io/redirect-entry-point: https
     traefik.ingress.kubernetes.io/redirect-permanent: "true"
-    cert-manager.io/issuer: "letsencrypt-staging"
+    cert-manager.io/issuer: ${CERT_ISSUER}
+    # cert-manager.io/issuer: "letsencrypt-staging"
+    # cert-manager.io/issuer: "selfsigned-issuer"
   hosts:
-    - host: chart-example.local
+    - host: trilium.${YOUR_DOMAIN_NAME}
       paths: ["/"]
   tls:
-  - hosts:
-    - trilium.dentropydaemon.net
-    secretName: trilium-cert-tls
+    - secretName: trilium-cert-tls
+      hosts:
+        - trilium.${YOUR_DOMAIN_NAME}
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
@@ -78,4 +80,3 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
-
