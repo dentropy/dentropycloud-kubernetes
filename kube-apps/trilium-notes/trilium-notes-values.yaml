@@ -42,7 +42,8 @@ persistentVolume:
   accessModes:
     - ReadWriteOnce
   annotations: {}
-  size: 2Gi
+  size: 4Gi
+  storageClassName: "nfs-client"
   storageClass: "nfs-client"
 
 ingress:
