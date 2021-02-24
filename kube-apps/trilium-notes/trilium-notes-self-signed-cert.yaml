@@ -1,11 +1,11 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: selfsigned-cert
+  name: trilium-notes-cert
   namespace: cert-manager-test
 spec:
   dnsNames:
-    - example.com
-  secretName: selfsigned-cert-tls
+    - trilium.${YOUR_DOMAIN_NAME}
+  secretName: trilium-notes-cert-tls
   issuerRef:
     name: test-selfsigned

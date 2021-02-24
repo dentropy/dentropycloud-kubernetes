@@ -123,13 +123,17 @@ sleep 30
 # Should return a bunch of pods
 
 echo "Configuring certificate issuer"
-if USE_SELF_SIGNED; then
-    sed -i -e "s/personinternet@protonmail.com/$LETSENCRYPT_EMAIL/g" ./kube-apps/cert-manager/cert-issuer-traefik-ingress.yaml
-    sudo kubectl apply -f ./kube-apps/cert-manager/cert-issuer-self-signed.yaml
+cd Dentropycloud-Kubernetes/kube-apps/cert-manager
+if $USE_SELF_SIGNED; then
+    echo "Creating self signed issuer"
+    sudo kubectl apply -f ./cert-issuer-self-signed.yaml 
 else
-    sudo kubectl apply -f ./kube-apps/cert-manager/cert-issuer-traefik-ingress.yaml
+    echo "Creating let's encrypt issuer"
+    sed -i -e "s/personinternet@protonmail.com/$LETSENCRYPT_EMAIL/g" ./cert-issuer-traefik-ingress.yaml
+    sudo kubectl apply -f ./cert-issuer-traefik-ingress.yaml
 fi
 
+cd $HOME
 if $INSTALL_EXAMPLE_APP; then
     cd Dentropycloud-Kubernetes/kube-apps/trilium-notes && bash install-trilium-notes.sh
 fi

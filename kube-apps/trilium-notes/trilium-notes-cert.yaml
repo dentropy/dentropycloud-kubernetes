@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: trilium-notes-cert
+  namespace: default
+spec:
+  dnsNames:
+    - trilium.${YOUR_DOMAIN_NAME}
+  secretName: trilium-notes-cert-tls
+  issuerRef:
+    name: letsencrypt-cluster-issuer
+    kind: ClusterIssuer
