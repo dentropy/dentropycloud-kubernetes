@@ -18,7 +18,7 @@ replicaCount: 1
 ## ref: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ##
 ingress:
-  enabled: true
+  enabled: false
   annotations: {}
   #  nginx.ingress.kubernetes.io/proxy-body-size: 4G
   #  kubernetes.io/tls-acme: "true"
@@ -181,7 +181,7 @@ nginx:
   resources: {}
 
 internalDatabase:
-  enabled: true
+  enabled: false
   name: nextcloud
 
 ##
@@ -217,7 +217,7 @@ externalDatabase:
 ##
 mariadb:
   ## Whether to deploy a mariadb server to satisfy the applications database requirements. To use an external database set this to false and configure the externalDatabase parameters
-  enabled: false
+  enabled: true
 
   db:
     name: nextcloud
@@ -233,12 +233,13 @@ mariadb:
   master:
     persistence:
       enabled: true
+      # storageClass: ""
       storageClass: "nfs-client"
       accessMode: ReadWriteOnce
       size: 8Gi
 
 postgresql:
-  enabled: true
+  enabled: false
   global:
     postgresql:
       postgresqlUsername: nextcloud
@@ -246,6 +247,7 @@ postgresql:
       postgresqlDatabase: nextcloud
   persistence:
     enabled: true
+    # storageClass: ""
     storageClass: "nfs-client"
 
 redis:
@@ -316,13 +318,13 @@ persistence:
   ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
   ##   GKE, AWS & OpenStack)
   ##
-  storageClass: "nfs-client"
+  # storageClass: "-"
 
   ## A manually managed Persistent Volume and Claim
   ## Requires persistence.enabled: true
   ## If defined, PVC must be created manually before volume will be bound
   # existingClaim:
-
+  storageClass: "nfs-client"
   accessMode: ReadWriteOnce
   size: 8Gi
 

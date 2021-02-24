@@ -1,3 +1,4 @@
 minio.credentials
 prod.*
 .env
+test.yaml
