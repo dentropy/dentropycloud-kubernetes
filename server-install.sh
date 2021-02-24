@@ -86,7 +86,7 @@ sudo apt install -y nfs-kernel-server
 sudo mkdir -p /mnt/nfsdir
 sudo chown nobody:nogroup /mnt/nfsdir
 sudo chmod 777 /mnt/nfsdir
-echo "/mnt/nfsdir    *(rw,sync,no_subtree_check,no_root_squash)" | sudo tee /etc/exports
+echo "/mnt/nfsdir    *(rw,async,no_subtree_check,no_root_squash)" | sudo tee /etc/exports
 sudo exportfs
 sudo systemctl restart nfs-kernel-server
 
