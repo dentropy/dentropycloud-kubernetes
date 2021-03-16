@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # https://cert-manager.io/docs/installation/kubernetes/
-kubectl create namespace cert-manager
+sudo kubectl create namespace cert-manager
 helm repo add jetstack https://charts.jetstack.io
 helm repo update
 helm install \
@@ -12,4 +12,4 @@ helm install \
 
 echo "Waiting 30 for cert-manager to configure itself"
 sleep 30
-kubectl apply -f cert-issuer-traefik-ingress.yaml
+sudo kubectl apply -f cert-issuer-traefik-ingress.yaml
