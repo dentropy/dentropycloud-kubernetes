@@ -59,7 +59,7 @@ echo "Configuring Firewall"
 sudo ufw default allow outgoing
 sudo ufw default allow incoming
 sudo ufw deny 2049 # For NFS
-sudo ufw enable
+sudo ufw --force enable
 
 
 echo "Updating Packages"
