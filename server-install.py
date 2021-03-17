@@ -2,7 +2,7 @@
 
 import os
 import subprocess
-import getpass
+
 
 logs = [] # TODO log all subprocesses to this list
 
@@ -19,6 +19,7 @@ def yes_or_no(question):
 
 def run_bash_string(bash_string):
     for line in bash_string.split("\n"):
+        print(line)
         subprocess.run(line.split(), capture_output=True)
 
 
@@ -28,6 +29,22 @@ def check_root():
     if sudo_test.returncode :
         print("Was unable to obtain root, exiting script")
         exit()
+
+def install_ansible_stuff():
+    print("Installing Ansible Stuff")
+    print("Installing pip3")
+    p = subprocess.Popen('wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py --user', stdout=subprocess.PIPE, shell=True) # Install pip
+    p.wait()
+    print("Removing pip3 install script")
+    subprocess.Popen('rm get-pip.py', shell=True)
+    os.environ['PATH'] += ':' + '/home/dentropy/.local/bin'
+    print("Installing ansible")
+    p = subprocess.Popen('python3 -m pip install --user ansible', stdout=subprocess.PIPE, shell=True)
+    p.wait()
+    print("Installing ansible role xanmanning.k3s")
+    p = subprocess.Popen('ansible-galaxy install xanmanning.k3s', stdout=subprocess.PIPE, shell=True) # Install ansible role xanmanning.k3s
+    p.wait()
+    
 
 def install_git_and_clone_repo():
     print("Updating")
@@ -166,7 +183,7 @@ def install_nfs_provisioner():
     run_bash_string(bash_script)
 
 
-def install_cer_manager():
+def install_cert_manager():
     print("Installing cert-manager")
     bash_script = '''
     sudo kubectl create namespace cert-manager
@@ -204,6 +221,14 @@ def install_trilium_notes():
     install_trilium_command = 'cd /home/%s/Dentropycloud-Kubernetes/kube-apps/trilium-notes && bash install-trilium-notes.sh' % getpass.getuser()
     subprocess.run(install_trilium_command.split(), capture_output=True)
 
-
-check_env_file()
-get_env_from_user()
+check_root()
+install_ansible_stuff()
+# check_env_file()
+# get_env_from_user()
+# install_k3s()
+# install_nfs_server()
+# install_kubectl()
+# install_helm()
+# install_nfs_provisioner()
+# install_cert_manager()
+# configure_certificate_issuer()
