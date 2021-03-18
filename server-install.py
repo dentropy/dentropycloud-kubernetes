@@ -55,8 +55,10 @@ def install_ansible_stuff():
     
 
 def install_git_and_clone_repo():
+    # TODO support other operating systems
+    # TODO just check if git is already installed
     print("Updating")
-    p = subprocess.Popen('sudo apt install -y git', stdout=subprocess.PIPE, shell=True)
+    p = subprocess.Popen('sudo apt-get update', stdout=subprocess.PIPE, shell=True)
     p.wait()
     print("Installing Git")
     p = subprocess.Popen('sudo apt install -y git', stdout=subprocess.PIPE, shell=True)
@@ -131,7 +133,6 @@ def get_env_from_user():
             input_confirmed = not yes_or_no("Please confirm that you do want to install Trilium Notes")
         else:
             input_confirmed = not yes_or_no("Please confirm that you do NOT want to install Trilium Notes")
-    # TODO Output to .env file
     dot_env_string = ""
     for env_var in env_vars:
         if type(env_vars[env_var]) == type(True):
@@ -147,8 +148,8 @@ def get_env_from_user():
 
 
 def configure_firewall():
-    # TODO double check everything workd, that's why capture output is there
-    # TODO detect operating system and configure accordingly
+    # TODO double check everything works, that's why capture output is there
+    # TODO detect linux distro and configure accordingly
     subprocess.run('sudo ufw default allow outgoing'.split(), capture_output=True)
     subprocess.run('sudo ufw default allow incoming'.split(), capture_output=True)
     subprocess.run('sudo ufw deny 2049'.split(), capture_output=True) # For NFS
@@ -168,7 +169,8 @@ def install_k3s():
     pass
 
 def install_nfs_server():
-    # TODO
+    # TODO test NFS server Install
+    # TODO support other linux distros
     print("Installing NFS server on localhost")
     bash_script =     '''
     echo "Installing NFS server on localhost"
