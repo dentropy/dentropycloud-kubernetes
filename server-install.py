@@ -2,7 +2,8 @@
 
 import os
 import subprocess
-
+import getpass
+from shutil import which
 
 logs = [] # TODO log all subprocesses to this list
 
@@ -31,16 +32,23 @@ def check_root():
         exit()
 
 def install_ansible_stuff():
-    print("Installing Ansible Stuff")
-    print("Installing pip3")
-    p = subprocess.Popen('wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py --user', stdout=subprocess.PIPE, shell=True) # Install pip
-    p.wait()
-    print("Removing pip3 install script")
-    subprocess.Popen('rm get-pip.py', shell=True)
-    os.environ['PATH'] += ':' + '/home/dentropy/.local/bin'
-    print("Installing ansible")
-    p = subprocess.Popen('python3 -m pip install --user ansible', stdout=subprocess.PIPE, shell=True)
-    p.wait()
+    print("Checking dependencies")
+    if os.path.exists('/home/%s/.local/bin' % getpass.getuser()):
+        os.environ['PATH'] += ':' + '/home/%s/.local/bin' % getpass.getuser()
+    if which("pip3") == None:
+        print("Installing pip3")
+        p = subprocess.Popen('wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py --user', stdout=subprocess.PIPE, shell=True) # Install pip
+        p.wait()
+        subprocess.Popen('rm get-pip.py', shell=True)
+        os.environ['PATH'] += ':' + '/home/%s/.local/bin' % getpass.getuser()
+    else:
+        print("pip3 already installed")
+    if which("ansible") == None:
+        print("Installing ansible")
+        p = subprocess.Popen('python3 -m pip install --user ansible', stdout=subprocess.PIPE, shell=True)
+        p.wait()
+    else:
+        print("ansible already installed")
     print("Installing ansible role xanmanning.k3s")
     p = subprocess.Popen('ansible-galaxy install xanmanning.k3s', stdout=subprocess.PIPE, shell=True) # Install ansible role xanmanning.k3s
     p.wait()
@@ -48,23 +56,42 @@ def install_ansible_stuff():
 
 def install_git_and_clone_repo():
     print("Updating")
-    subprocess.run('sudo apt-get -y update'.split(), capture_output=True)
+    p = subprocess.Popen('sudo apt install -y git', stdout=subprocess.PIPE, shell=True)
+    p.wait()
     print("Installing Git")
-    subprocess.run('sudo apt install -y git'.split(), capture_output=True)
+    p = subprocess.Popen('sudo apt install -y git', stdout=subprocess.PIPE, shell=True)
+    p.wait()
     print("Cloning Repo")
     clone_repo_command = "git clone https://gitlab.com/dentropy/Dentropycloud-Kubernetes.git /home/%s/Dentropycloud-Kubernetes" % getpass.getuser()
-    subprocess.run(clone_repo_command.split(), capture_output=True)
+    p = subprocess.Popen(clone_repo_command, stdout=subprocess.PIPE, shell=True) # Install pip
+    p.wait()
     
 def check_env_file():
-    if os.path.exists("/home/%s/Dentropycloud-Kubernetes" % getpass.getuser()):
+    # TODO Support /root directory rather than a user directory
+    if not os.path.exists("/home/%s/Dentropycloud-Kubernetes" % getpass.getuser()):
         install_git_and_clone_repo()
-        if os.path.exists("/home/%s/Dentropycloud-Kubernetes/.env" % getpass.getuser()):
-            PREVIOUS_ENV_FILE = True
+        if not os.path.exists("/home/%s/Dentropycloud-Kubernetes/.env" % getpass.getuser()):
+            return False
     else:
-        PREVIOUS_ENV_FILE = False
+        return True
+    
 
-env_vars = {}
+def import_env_file(env_file_path):
+    env_vars = {}
+    with open(env_file_path) as f:
+        env_file_contents = f.readlines()
+    for env_var in env_file_contents:
+        env_var = env_var.replace("\n", "")
+        if "true" in env_var:
+            env_vars[env_var.split("=")[0]] = True
+        elif "false" in env_var:
+            env_vars[env_var.split("=")[0]] = False
+        else:
+            env_vars[env_var.split("=")[0]] = env_var.split("=")[1]
+    return env_vars
+
 def get_env_from_user():
+    env_vars = {}
     input_confirmed = True
     while input_confirmed:
         env_vars["YOUR_DOMAIN_NAME"] = input("Please enter your domain name: ")
@@ -115,6 +142,7 @@ def get_env_from_user():
     text_file = open("/home/%s/Dentropycloud-Kubernetes/.env" % getpass.getuser(), "w")
     n = text_file.write(dot_env_string)
     text_file.close()
+    return env_vars
 
 
 
@@ -223,8 +251,11 @@ def install_trilium_notes():
 
 check_root()
 install_ansible_stuff()
-# check_env_file()
-# get_env_from_user()
+PREVIOUS_ENV_FILE = check_env_file()
+if PREVIOUS_ENV_FILE:
+    env_vars = import_env_file("/home/%s/Dentropycloud-Kubernetes/.env" % getpass.getuser())
+else:
+    env_vars = get_env_from_user()
 # install_k3s()
 # install_nfs_server()
 # install_kubectl()
