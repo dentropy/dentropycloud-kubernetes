@@ -77,7 +77,7 @@ def check_env_file():
     if not os.path.exists("/home/%s/Dentropycloud-Kubernetes" % getpass.getuser()):
         install_git_and_clone_repo()
         if not os.path.exists("/home/%s/Dentropycloud-Kubernetes/.env" % getpass.getuser()):
-            return True
+            return False
     else:
         return True
     
