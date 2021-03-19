@@ -151,23 +151,6 @@ def get_env_from_user():
     text_file.close()
     return env_vars
 
-
-
-def configure_firewall():
-    # TODO double check everything works, that's why capture output is there
-    # TODO detect linux distro and configure accordingly
-    configure_firewall_script = '''
-    sudo ufw default allow outgoing
-    sudo ufw default allow incoming
-    sudo ufw deny 2049
-    sudo ufw --force enable
-    '''
-    run_bash_string(bash_script)
-    #subprocess.run('sudo ufw default allow outgoing'.split(), capture_output=True)
-    #subprocess.run('sudo ufw default allow incoming'.split(), capture_output=True)
-    #subprocess.run('sudo ufw deny 2049'.split(), capture_output=True) # For NFS
-    #subprocess.run('sudo ufw --force enable'.split(), capture_output=True)
-
 def configure_nfs_server():
     # TODO test NFS server Install
     # TODO support other linux distros
