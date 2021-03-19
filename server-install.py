@@ -8,7 +8,7 @@ from shutil import which
 logs = [] # TODO log all subprocesses to this list
 
 def yes_or_no(question):
-    reply = str(input(question+' (y/n): ')).lower().strip()
+    reply = str(input(question+' (Y/n): ')).lower().strip()
     if len(reply) == 0:
         return True
     elif reply[0] == 'y':
@@ -21,7 +21,8 @@ def yes_or_no(question):
 def run_bash_string(bash_string):
     for line in bash_string.split("\n"):
         print(line)
-        subprocess.run(line.split(), capture_output=True)
+        p = subprocess.Popen(line, stdout=subprocess.PIPE, shell=True) # Install pip
+        p.wait()
 
 
 def check_root():
@@ -35,6 +36,17 @@ def install_ansible_stuff():
     print("Checking dependencies")
     if os.path.exists('/home/%s/.local/bin' % getpass.getuser()):
         os.environ['PATH'] += ':' + '/home/%s/.local/bin' % getpass.getuser()
+    print("Checking for git")
+    # TODO support installing git on other operating systems
+    if which("git") == None:
+        print("Updating")
+        p = subprocess.Popen('sudo apt-get update', stdout=subprocess.PIPE, shell=True)
+        p.wait()
+        print("Installing Git")
+        p = subprocess.Popen('sudo apt install -y git', stdout=subprocess.PIPE, shell=True)
+        p.wait()
+    else:
+        print("git is already installed")
     if which("pip3") == None:
         print("Installing pip3")
         p = subprocess.Popen('wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py --user', stdout=subprocess.PIPE, shell=True) # Install pip
@@ -42,7 +54,7 @@ def install_ansible_stuff():
         subprocess.Popen('rm get-pip.py', shell=True)
         os.environ['PATH'] += ':' + '/home/%s/.local/bin' % getpass.getuser()
     else:
-        print("pip3 already installed")
+        print("pip3 is already installed")
     if which("ansible") == None:
         print("Installing ansible")
         p = subprocess.Popen('python3 -m pip install --user ansible', stdout=subprocess.PIPE, shell=True)
@@ -55,25 +67,17 @@ def install_ansible_stuff():
     
 
 def install_git_and_clone_repo():
-    # TODO support other operating systems
-    # TODO just check if git is already installed
-    print("Updating")
-    p = subprocess.Popen('sudo apt-get update', stdout=subprocess.PIPE, shell=True)
-    p.wait()
-    print("Installing Git")
-    p = subprocess.Popen('sudo apt install -y git', stdout=subprocess.PIPE, shell=True)
-    p.wait()
-    print("Cloning Repo")
+    print("Cloning Dentropycloud-Kubernetes git repo")
     clone_repo_command = "git clone https://gitlab.com/dentropy/Dentropycloud-Kubernetes.git /home/%s/Dentropycloud-Kubernetes" % getpass.getuser()
     p = subprocess.Popen(clone_repo_command, stdout=subprocess.PIPE, shell=True) # Install pip
     p.wait()
     
 def check_env_file():
-    # TODO Support /root directory rather than a user directory
+    # TODO Support /root directory rather than a user's home directory
     if not os.path.exists("/home/%s/Dentropycloud-Kubernetes" % getpass.getuser()):
         install_git_and_clone_repo()
         if not os.path.exists("/home/%s/Dentropycloud-Kubernetes/.env" % getpass.getuser()):
-            return False
+            return True
     else:
         return True
     
@@ -120,6 +124,8 @@ def get_env_from_user():
         env_vars["INSTALL_NFS_SERVER"] = yes_or_no("Would you like to install a NFS Server on this node")
         if env_vars["INSTALL_NFS_SERVER"]:
             input_confirmed = not yes_or_no("Please confirm that you do want to install a NFS server to be used by Kubernetes")
+            env_vars["NFS_SHARE_IP_ADDRESS"] = "127.0.0.1"
+            env_vars["NFS_SHARE_PATH"] = "/mnt/nfsdir/provisioner"
         else:
             env_vars["NFS_SHARE_IP_ADDRESS"] = input("Please enter IP Address of NFS Share: ")
             # TODO check valid IP address
@@ -150,12 +156,61 @@ def get_env_from_user():
 def configure_firewall():
     # TODO double check everything works, that's why capture output is there
     # TODO detect linux distro and configure accordingly
-    subprocess.run('sudo ufw default allow outgoing'.split(), capture_output=True)
-    subprocess.run('sudo ufw default allow incoming'.split(), capture_output=True)
-    subprocess.run('sudo ufw deny 2049'.split(), capture_output=True) # For NFS
-    subprocess.run('sudo ufw --force enable'.split(), capture_output=True)
+    configure_firewall_script = '''
+    sudo ufw default allow outgoing
+    sudo ufw default allow incoming
+    sudo ufw deny 2049
+    sudo ufw --force enable
+    '''
+    run_bash_string(bash_script)
+    #subprocess.run('sudo ufw default allow outgoing'.split(), capture_output=True)
+    #subprocess.run('sudo ufw default allow incoming'.split(), capture_output=True)
+    #subprocess.run('sudo ufw deny 2049'.split(), capture_output=True) # For NFS
+    #subprocess.run('sudo ufw --force enable'.split(), capture_output=True)
+
+def configure_nfs_server():
+    # TODO test NFS server Install
+    # TODO support other linux distros
+    if which("showmount") != None:
+        nfs_check_command = "showmount -e %s" % env_vars["NFS_SHARE_IP_ADDRESS"]
+        try:
+            nfs_test = subprocess.check_output(nfs_check_command.split(), shell=True)
+            print(nfs_test)
+            print("NFS server working and ready")
+            return True
+        except subprocess.CalledProcessError:
+            if env_vars["INSTALL_NFS_SERVER"]:
+                print("Need to install NFS server")
+            else:
+                # TODO add troubleshooting steps here, 
+                # TODO have ansible script install NFS on another server
+                print("Problem with NFS server exiting")
+                exit()
+    print("Installing NFS server on localhost")
+    print("Configuring firewall for NFS server")
+    configure_firewall_script = '''
+    sudo ufw default allow outgoing
+    sudo ufw default allow incoming
+    sudo ufw deny 2049
+    sudo ufw --force enable
+    '''
+    run_bash_string(configure_firewall_script)
+    bash_script = '''
+    echo "Installing NFS server on localhost"
+    sudo apt -y update
+    sudo apt install -y nfs-kernel-server
+    sudo mkdir -p /mnt/nfsdir
+    sudo chown nobody:nogroup /mnt/nfsdir
+    sudo chmod 777 /mnt/nfsdir
+    echo "/mnt/nfsdir    *(rw,async,no_subtree_check,no_root_squash)" | sudo tee /etc/exports
+    sudo exportfs
+    sudo systemctl restart nfs-kernel-server
+    '''
+    run_bash_string(bash_script)
+
 
 def install_k3s():
+    # ssh-keygen -f /home/dentropy/.ssh/ddaemon -P ""
     # TODO, use ansible
     '''
     echo "Install kubernetes, k3s.io distribution"
@@ -168,22 +223,6 @@ def install_k3s():
     '''
     pass
 
-def install_nfs_server():
-    # TODO test NFS server Install
-    # TODO support other linux distros
-    print("Installing NFS server on localhost")
-    bash_script =     '''
-    echo "Installing NFS server on localhost"
-    sudo apt -y update
-    sudo apt install -y nfs-kernel-server
-    sudo mkdir -p /mnt/nfsdir
-    sudo chown nobody:nogroup /mnt/nfsdir
-    sudo chmod 777 /mnt/nfsdir
-    echo "/mnt/nfsdir    *(rw,async,no_subtree_check,no_root_squash)" | sudo tee /etc/exports
-    sudo exportfs
-    sudo systemctl restart nfs-kernel-server
-    '''
-    run_bash_string(bash_script)
 
 def install_kubectl():
     print("Installing kubectl on localhost")
@@ -254,12 +293,14 @@ def install_trilium_notes():
 check_root()
 install_ansible_stuff()
 PREVIOUS_ENV_FILE = check_env_file()
+print("PREVIOUS_ENV_FILE")
+print(PREVIOUS_ENV_FILE)
 if PREVIOUS_ENV_FILE:
     env_vars = import_env_file("/home/%s/Dentropycloud-Kubernetes/.env" % getpass.getuser())
 else:
     env_vars = get_env_from_user()
+configure_nfs_server()
 # install_k3s()
-# install_nfs_server()
 # install_kubectl()
 # install_helm()
 # install_nfs_provisioner()
