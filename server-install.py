@@ -253,11 +253,21 @@ def install_k3s():
         # TODO actually test installing k3s on localhost
         p = subprocess.Popen(ansible_install, stdout=subprocess.PIPE, shell=True) 
         p.wait()
-        print("Putting permissions back to normal")
-        print("Fixing some permissions")
-        #p = subprocess.Popen('sudo chmod -R 755 /usr/local/bin', stdout=subprocess.PIPE, shell=True) 
-        #p.wait()
+        if not os.path.exists("/home/%s/.kube" % getpass.getuser()):
+            os.mkdir("/home/%s/.kube" % getpass.getuser())
+            bash_script = '''
+            sudo cp /etc/rancher/k3s/k3s.yaml /home/%s/.kube/config
+            sudo chown %s:%s /home/%s/.kube/config
+            ''' % (getpass.getuser(),getpass.getuser(),getpass.getuser(),getpass.getuser())
+            run_bash_string(bash_script)
+        elif not os.path.exists("/home/%s/.kube/config" % getpass.getuser()): 
+            bash_script = '''
+            sudo cp /etc/rancher/k3s/k3s.yaml /home/%s/.kube/config
+            sudo chown %s:%s /home/%s/.kube/config
+            ''' % (getpass.getuser(),getpass.getuser(),getpass.getuser(),getpass.getuser())
+            run_bash_string(bash_script)
         print("k3s installed")
+        
         '''
         echo "Install kubernetes, k3s.io distribution"
         sudo curl -sfL https://get.k3s.io |  INSTALL_K3S_VERSION=v1.19.7+k3s1 sh -
@@ -267,7 +277,6 @@ def install_k3s():
         mkdir .kube
         cp $HOME/k3s.yaml $HOME/.kube/config
         '''
-
 
 def install_kubectl():
     if which("kubectl") == None:
@@ -357,7 +366,8 @@ else:
 configure_nfs_server()
 install_k3s()
 # install_kubectl()
-# install_helm()
-# install_nfs_provisioner()
+install_helm()
+move_config()
+install_nfs_provisioner()
 # install_cert_manager()
 # configure_certificate_issuer()
