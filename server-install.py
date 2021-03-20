@@ -185,7 +185,8 @@ def configure_nfs_server():
     sudo mkdir -p /mnt/nfsdir
     sudo chown nobody:nogroup /mnt/nfsdir
     sudo chmod 777 /mnt/nfsdir
-    echo "/mnt/nfsdir    *(rw,async,no_subtree_check,no_root_squash)" | sudo tee /etc/exports
+    sudo su
+    sudo sh -c 'echo "/mnt/nfsdir *(rw,async,no_subtree_check,no_root_squash)" > /etc/exports'
     sudo exportfs
     sudo systemctl restart nfs-kernel-server
     '''
@@ -193,75 +194,79 @@ def configure_nfs_server():
 
 
 def install_k3s():
-    print("Installing k3s on localhost")
-    # p = subprocess.Popen("sudo usermod -a -G root %s" % getpass.getuser(), stdout=subprocess.PIPE, shell=True) 
-    # p.wait()
-    print("Configuring SSH for localhost")
-    if not os.path.exists("/home/dentropy/.ssh/ddaemon"):
-        print("Generating Dentropy Daemon ssh key")
-        p = subprocess.Popen('ssh-keygen -f /home/dentropy/.ssh/ddaemon -P ""', stdout=subprocess.PIPE, shell=True) 
-        p.wait()
-    print("Adding Dentropy Daemon ssh key to ssh-agent")
-    p = subprocess.Popen('ssh-add /home/dentropy/.ssh/ddaemon', stdout=subprocess.PIPE, shell=True) 
-    p.wait()
-    print("Copying Dentropy Daemon ssh key to host")
-    p = subprocess.Popen('ssh-copy-id -f %s@127.0.0.1' % getpass.getuser(), stdout=subprocess.PIPE, shell=True) 
-    p.wait()
-    print("Fixing some permissions")
-    # p = subprocess.Popen('sudo chmod -R 775 /usr/local/bin', stdout=subprocess.PIPE, shell=True) 
-    # p.wait()
-    print("Configuring ansible playbook")
-    if not os.path.exists("/home/%s/kubernetes-playbook" % getpass.getuser()):
-        os.mkdir("/home/%s/kubernetes-playbook" % getpass.getuser())
-    ansible_inventory_yml = '''
-    k3s_cluster:
-        hosts:
-            kube-0:
-                ansible_user: %s
-                ansible_host: 127.0.0.1
-                ansible_sudo_pass: 
-                ansible_python_interpreter: /usr/bin/python3
-    ''' % getpass.getuser()
-    print(ansible_inventory_yml, file=open("/home/%s/kubernetes-playbook/inventory.yml" % getpass.getuser(), 'w'))
-    ansible_cluster_yaml = '''
-    - name: Build a single node k3s cluster with etcd datastore
-      hosts: k3s_cluster
-      vars:
-        k3s_release_version: v1.19
-        k3s_become_for_all: true
-        k3s_etcd_datastore: true
-      roles:
-        - role: xanmanning.k3s
-    '''
-    print(ansible_cluster_yaml, file=open("/home/%s/kubernetes-playbook/cluster.yml" % getpass.getuser(), 'w'))
-    print("Testing if ansible can connect to host")
-    anisble_test = "ansible -i /home/%s/kubernetes-playbook/inventory.yml -m ping all" % getpass.getuser()
-    p = subprocess.Popen(anisble_test, stdout=subprocess.PIPE, shell=True) 
-    p.wait()
-    if "SUCCESS" in str(p.stdout.read()):
-        print("Ansible sucessfully connected to host")
+    test_kubectl = subprocess.check_output("echo %s | sudo -S kubectl get nodes" % sudo_pass, shell=True)
+    if "Ready".lower() in str(test_kubectl.lower()):
+        print("Kubernetes cluster already configured")
     else:
-        print("We have a problem ansible did not connect")
-        # TODO troubleshoot here
-    print("Installing k3s")
-    ansible_install = 'ansible-playbook -i /home/%s/kubernetes-playbook/inventory.yml /home/%s/kubernetes-playbook/cluster.yml --extra-vars "ansible_sudo_pass=%s"' % (getpass.getuser(), getpass.getuser(), sudo_pass)
-    # TODO actually test installing k3s on localhost
-    p = subprocess.Popen(ansible_install, stdout=subprocess.PIPE, shell=True) 
-    p.wait()
-    print("Putting permissions back to normal")
-    print("Fixing some permissions")
-    #p = subprocess.Popen('sudo chmod -R 755 /usr/local/bin', stdout=subprocess.PIPE, shell=True) 
-    #p.wait()
-    print("k3s installed")
-    '''
-    echo "Install kubernetes, k3s.io distribution"
-    sudo curl -sfL https://get.k3s.io |  INSTALL_K3S_VERSION=v1.19.7+k3s1 sh -
-    sudo cp /etc/rancher/k3s/k3s.yaml $HOME/k3s.yaml
-    cd $HOME
-    sudo chown -R $USER:$USER .
-    mkdir .kube
-    cp $HOME/k3s.yaml $HOME/.kube/config
-    '''
+        print("Installing k3s on localhost")
+        # p = subprocess.Popen("sudo usermod -a -G root %s" % getpass.getuser(), stdout=subprocess.PIPE, shell=True) 
+        # p.wait()
+        print("Configuring SSH for localhost")
+        if not os.path.exists("/home/dentropy/.ssh/ddaemon"):
+            print("Generating Dentropy Daemon ssh key")
+            p = subprocess.Popen('ssh-keygen -f /home/dentropy/.ssh/ddaemon -P ""', stdout=subprocess.PIPE, shell=True) 
+            p.wait()
+        print("Adding Dentropy Daemon ssh key to ssh-agent")
+        p = subprocess.Popen('ssh-add /home/dentropy/.ssh/ddaemon', stdout=subprocess.PIPE, shell=True) 
+        p.wait()
+        print("Copying Dentropy Daemon ssh key to host")
+        p = subprocess.Popen('ssh-copy-id -f %s@127.0.0.1' % getpass.getuser(), stdout=subprocess.PIPE, shell=True) 
+        p.wait()
+        print("Fixing some permissions")
+        # p = subprocess.Popen('sudo chmod -R 775 /usr/local/bin', stdout=subprocess.PIPE, shell=True) 
+        # p.wait()
+        print("Configuring ansible playbook")
+        if not os.path.exists("/home/%s/kubernetes-playbook" % getpass.getuser()):
+            os.mkdir("/home/%s/kubernetes-playbook" % getpass.getuser())
+        ansible_inventory_yml = '''
+        k3s_cluster:
+            hosts:
+                kube-0:
+                    ansible_user: %s
+                    ansible_host: 127.0.0.1
+                    ansible_sudo_pass: 
+                    ansible_python_interpreter: /usr/bin/python3
+        ''' % getpass.getuser()
+        print(ansible_inventory_yml, file=open("/home/%s/kubernetes-playbook/inventory.yml" % getpass.getuser(), 'w'))
+        ansible_cluster_yaml = '''
+        - name: Build a single node k3s cluster with etcd datastore
+        hosts: k3s_cluster
+        vars:
+            k3s_release_version: v1.19
+            k3s_become_for_all: true
+            k3s_etcd_datastore: true
+        roles:
+            - role: xanmanning.k3s
+        '''
+        print(ansible_cluster_yaml, file=open("/home/%s/kubernetes-playbook/cluster.yml" % getpass.getuser(), 'w'))
+        print("Testing if ansible can connect to host")
+        anisble_test = "ansible -i /home/%s/kubernetes-playbook/inventory.yml -m ping all" % getpass.getuser()
+        p = subprocess.Popen(anisble_test, stdout=subprocess.PIPE, shell=True) 
+        p.wait()
+        if "SUCCESS" in str(p.stdout.read()):
+            print("Ansible sucessfully connected to host")
+        else:
+            print("We have a problem ansible did not connect")
+            # TODO troubleshoot here
+        print("Installing k3s")
+        ansible_install = 'ansible-playbook -i /home/%s/kubernetes-playbook/inventory.yml /home/%s/kubernetes-playbook/cluster.yml --extra-vars "ansible_sudo_pass=%s"' % (getpass.getuser(), getpass.getuser(), sudo_pass)
+        # TODO actually test installing k3s on localhost
+        p = subprocess.Popen(ansible_install, stdout=subprocess.PIPE, shell=True) 
+        p.wait()
+        print("Putting permissions back to normal")
+        print("Fixing some permissions")
+        #p = subprocess.Popen('sudo chmod -R 755 /usr/local/bin', stdout=subprocess.PIPE, shell=True) 
+        #p.wait()
+        print("k3s installed")
+        '''
+        echo "Install kubernetes, k3s.io distribution"
+        sudo curl -sfL https://get.k3s.io |  INSTALL_K3S_VERSION=v1.19.7+k3s1 sh -
+        sudo cp /etc/rancher/k3s/k3s.yaml $HOME/k3s.yaml
+        cd $HOME
+        sudo chown -R $USER:$USER .
+        mkdir .kube
+        cp $HOME/k3s.yaml $HOME/.kube/config
+        '''
 
 
 def install_kubectl():
