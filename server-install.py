@@ -19,18 +19,22 @@ def yes_or_no(question):
         return True #yes_or_no("Uhhhh... please enter ")
 
 def run_bash_string(bash_string):
+    # bash_string = bash_string.replace("sudo", ("echo %s | sudo -S" % (bash_string)))
     for line in bash_string.split("\n"):
         print(line)
         p = subprocess.Popen(line, stdout=subprocess.PIPE, shell=True) # Install pip
         p.wait()
 
-
+import getpass
+import subprocess
 def check_root():
     print("We need sudo access for later")
-    sudo_test = subprocess.run(['sudo', 'echo', 'Thanks'], capture_output=True)
+    sudo_pass = getpass.getpass()
+    sudo_test = subprocess.run( ("echo %s | sudo -S %s echo test" % (sudo_pass, sudo_pass)).split(), capture_output=True)
     if sudo_test.returncode :
         print("Was unable to obtain root, exiting script")
         exit()
+    return sudo_pass
 
 def install_dependencies():
     print("Checking dependencies")
@@ -40,10 +44,9 @@ def install_dependencies():
     # TODO support installing git on other operating systems
     if which("git") == None:
         print("Updating")
-        p = subprocess.Popen('sudo apt-get update', stdout=subprocess.PIPE, shell=True)
-        p.wait()
+        run_bash_string("sudo apt-get update")
         print("Installing Git")
-        p = subprocess.Popen('sudo apt install -y git', stdout=subprocess.PIPE, shell=True)
+        run_bash_string('sudo apt install -y git')
         p.wait()
     else:
         print("git is already installed")
@@ -65,15 +68,17 @@ def install_dependencies():
     p = subprocess.Popen('ansible-galaxy install xanmanning.k3s', stdout=subprocess.PIPE, shell=True) # Install ansible role xanmanning.k3s
     p.wait()
     if os.path.exists("/home/%s/Dentropycloud-Kubernetes"):
-        print("Cloning Dentropycloud-Kubernetes repo")
-        clone_repo_command = "git clone https://gitlab.com/dentropy/Dentropycloud-Kubernetes.git /home/%s/Dentropycloud-Kubernetes" % getpass.getuser()
-        p = subprocess.Popen(clone_repo_command, stdout=subprocess.PIPE, shell=True) # Install pip
-        p.wait()
-    else:
         print("Pulling Dentropycloud-Kubernetes git repo")
         pull_command = "cd /home/%s/Dentropycloud-Kubernetes/ && git pull" % getpass.getuser()
         p = subprocess.Popen(pull_command, stdout=subprocess.PIPE, shell=True) # Install pip
         p.wait()
+        print("Done pulling")
+    else:
+        print("Cloning Dentropycloud-Kubernetes repo")
+        clone_repo_command = "git clone https://gitlab.com/dentropy/Dentropycloud-Kubernetes.git /home/%s/Dentropycloud-Kubernetes" % getpass.getuser()
+        p = subprocess.Popen(clone_repo_command, stdout=subprocess.PIPE, shell=True) # Install pip
+        p.wait()
+        print("Done cloning")
 
 def import_env_file(env_file_path):
     env_vars = {}
@@ -145,6 +150,7 @@ def get_env_from_user():
             input_confirmed = not yes_or_no("Please confirm that you do want to install Trilium Notes")
         else:
             input_confirmed = not yes_or_no("Please confirm that you do NOT want to install Trilium Notes")
+    # TODO Meta Confirmation with every setting printed out
     export_env_file(env_vars)
 
 def configure_nfs_server():
@@ -190,8 +196,8 @@ def configure_nfs_server():
 
 def install_k3s():
     print("Installing k3s on localhost")
-    p = subprocess.Popen("sudo usermod -a -G root %s" % getpass.getuser(), stdout=subprocess.PIPE, shell=True) 
-    p.wait()
+    # p = subprocess.Popen("sudo usermod -a -G root %s" % getpass.getuser(), stdout=subprocess.PIPE, shell=True) 
+    # p.wait()
     print("Configuring SSH for localhost")
     if not os.path.exists("/home/dentropy/.ssh/ddaemon"):
         print("Generating Dentropy Daemon ssh key")
@@ -203,6 +209,9 @@ def install_k3s():
     print("Copying Dentropy Daemon ssh key to host")
     p = subprocess.Popen('ssh-copy-id -f %s@127.0.0.1' % getpass.getuser(), stdout=subprocess.PIPE, shell=True) 
     p.wait()
+    print("Fixing some permissions")
+    # p = subprocess.Popen('sudo chmod -R 775 /usr/local/bin', stdout=subprocess.PIPE, shell=True) 
+    # p.wait()
     print("Configuring ansible playbook")
     if not os.path.exists("/home/%s/kubernetes-playbook" % getpass.getuser()):
         os.mkdir("/home/%s/kubernetes-playbook" % getpass.getuser())
@@ -212,19 +221,21 @@ def install_k3s():
             kube-0:
                 ansible_user: %s
                 ansible_host: 127.0.0.1
+                ansible_sudo_pass: 
                 ansible_python_interpreter: /usr/bin/python3
     ''' % getpass.getuser()
     print(ansible_inventory_yml, file=open("/home/%s/kubernetes-playbook/inventory.yml" % getpass.getuser(), 'w'))
     ansible_cluster_yaml = '''
     - name: Build a single node k3s cluster with etcd datastore
-        hosts: kube-0
-        vars:
-            k3s_become_for_all: true
-            k3s_etcd_datastore: true
-        roles:
-            - role: xanmanning.k3s
+      hosts: k3s_cluster
+      vars:
+        k3s_release_version: v1.19
+        k3s_become_for_all: true
+        k3s_etcd_datastore: true
+      roles:
+        - role: xanmanning.k3s
     '''
-    print(ansible_cluster_yaml, file=open("/home/%s/kubernetes-playbook/cluster.tml" % getpass.getuser(), 'w'))
+    print(ansible_cluster_yaml, file=open("/home/%s/kubernetes-playbook/cluster.yml" % getpass.getuser(), 'w'))
     print("Testing if ansible can connect to host")
     anisble_test = "ansible -i /home/%s/kubernetes-playbook/inventory.yml -m ping all" % getpass.getuser()
     p = subprocess.Popen(anisble_test, stdout=subprocess.PIPE, shell=True) 
@@ -234,10 +245,16 @@ def install_k3s():
     else:
         print("We have a problem ansible did not connect")
         # TODO troubleshoot here
-    ansible_install = "ansible-playbook -i /home/%s/kubernetes-playbook/inventory.yml /home/%s/kubernetes-playgbook/cluster.yml" % (getpass.getuser(), getpass.getuser())
+    print("Installing k3s")
+    ansible_install = 'ansible-playbook -i /home/%s/kubernetes-playbook/inventory.yml /home/%s/kubernetes-playbook/cluster.yml --extra-vars "ansible_sudo_pass=%s"' % (getpass.getuser(), getpass.getuser(), sudo_pass)
     # TODO actually test installing k3s on localhost
-    #p = subprocess.Popen(ansible_install, stdout=subprocess.PIPE, shell=True) 
+    p = subprocess.Popen(ansible_install, stdout=subprocess.PIPE, shell=True) 
+    p.wait()
+    print("Putting permissions back to normal")
+    print("Fixing some permissions")
+    #p = subprocess.Popen('sudo chmod -R 755 /usr/local/bin', stdout=subprocess.PIPE, shell=True) 
     #p.wait()
+    print("k3s installed")
     '''
     echo "Install kubernetes, k3s.io distribution"
     sudo curl -sfL https://get.k3s.io |  INSTALL_K3S_VERSION=v1.19.7+k3s1 sh -
@@ -250,18 +267,30 @@ def install_k3s():
 
 
 def install_kubectl():
-    print("Installing kubectl on localhost")
-    subprocess.run('curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"'.split(), capture_output=True)
+    if which("kubectl") == None:
+        print("Installing kubectl on localhost")
+        bash_script = '''
+        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        chmod +x ./kubectl
+        sudo mv ./kubectl /usr/local/bin/kubectl
+        '''
+        run_bash_string(bash_script)
+        print("kubectl installed")
+    else:
+        print("kubectl is already installed")
 
 def install_helm():
-    print("Installing Helm, a kubernetes package manager")
-    bash_script = '''
-    curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
-    chmod 700 get_helm.sh
-    ./get_helm.sh
-    rm ./get_helm.sh
-    '''
-    run_bash_string(bash_script)
+    if which("helm") == None:
+        print("Installing Helm, a kubernetes package manager")
+        bash_script = '''
+        curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+        chmod 700 get_helm.sh
+        ./get_helm.sh
+        rm ./get_helm.sh
+        '''
+        run_bash_string(bash_script)
+    else:
+        print("helm is already installed")
 
 def install_nfs_provisioner():
     print("Installing nfs-provisioner")
@@ -315,7 +344,7 @@ def install_trilium_notes():
     install_trilium_command = 'cd /home/%s/Dentropycloud-Kubernetes/kube-apps/trilium-notes && bash install-trilium-notes.sh' % getpass.getuser()
     subprocess.run(install_trilium_command.split(), capture_output=True)
 
-check_root()
+sudo_pass = check_root()
 install_dependencies()
 env_vars = None
 if os.path.exists("/home/%s/Dentropycloud-Kubernetes/.env" % getpass.getuser()):
