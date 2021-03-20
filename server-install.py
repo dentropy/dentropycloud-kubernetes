@@ -305,37 +305,45 @@ def install_helm():
         print("helm is already installed")
 
 def install_nfs_provisioner():
-    print("Installing nfs-provisioner")
-    bash_script = '''
-    echo "Installing nfs-provisioner"
-    sudo mkdir /mnt/nfsdir/provisioner
-    helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
-    helm repo update
-    helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
-        --set nfs.server=127.0.0.1 \
-        --set nfs.path=/mnt/nfsdir/provisioner
-    '''
-    run_bash_string(bash_script)
+    helm_list = str(subprocess.check_output("helm list --all-namespaces".split())).lower()
+    if "nfs-subdir-external-provisioner" not in helm_list:
+        print("Installing nfs-provisioner")
+        bash_script = '''
+        echo "Installing nfs-provisioner"
+        sudo mkdir /mnt/nfsdir/provisioner
+        helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
+        helm repo update
+        helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
+            --set nfs.server=127.0.0.1 \
+            --set nfs.path=/mnt/nfsdir/provisioner
+        '''
+        run_bash_string(bash_script)
+    else:
+        print("nfs-subdir-external-provisioner already installed")
 
 
 def install_cert_manager():
-    print("Installing cert-manager")
-    bash_script = '''
-    sudo kubectl create namespace cert-manager
-    helm repo add jetstack https://charts.jetstack.io
-    helm repo update
-    helm install \
-        cert-manager jetstack/cert-manager \
-        --namespace cert-manager \
-        --version v1.2.0 \
-        --set installCRDs=true
-    echo "Waiting for cert-manager to configure itself"
-    sleep 30
-    # Wait 30 seconds
-    # kubectl get pods --namespace cert-manager
-    # Should return a bunch of pods
-    '''
-    run_bash_string(bash_script)
+    helm_list = str(subprocess.check_output("helm list --all-namespaces".split())).lower()
+    if "cert-manager" not in helm_list:
+        print("Installing cert-manager")
+        bash_script = '''
+        sudo kubectl create namespace cert-manager
+        helm repo add jetstack https://charts.jetstack.io
+        helm repo update
+        helm install \
+            cert-manager jetstack/cert-manager \
+            --namespace cert-manager \
+            --version v1.2.0 \
+            --set installCRDs=true
+        echo "Waiting for cert-manager to configure itself"
+        sleep 30
+        # Wait 30 seconds
+        # kubectl get pods --namespace cert-manager
+        # Should return a bunch of pods
+        '''
+        run_bash_string(bash_script)
+    else:
+        print("cert-manager already installed")
 
 def configure_certificate_issuer():
     # TODO can't use bash for this
@@ -367,7 +375,6 @@ configure_nfs_server()
 install_k3s()
 # install_kubectl()
 install_helm()
-move_config()
 install_nfs_provisioner()
-# install_cert_manager()
+install_cert_manager()
 # configure_certificate_issuer()
