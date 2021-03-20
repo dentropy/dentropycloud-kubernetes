@@ -19,18 +19,16 @@ def yes_or_no(question):
         return True #yes_or_no("Uhhhh... please enter ")
 
 def run_bash_string(bash_string):
-    # bash_string = bash_string.replace("sudo", ("echo %s | sudo -S" % (bash_string)))
+    bash_string = bash_string.replace("sudo", ("echo %s | sudo -S" % sudo_pass))
     for line in bash_string.split("\n"):
         print(line)
-        p = subprocess.Popen(line, stdout=subprocess.PIPE, shell=True) # Install pip
+        p = subprocess.Popen(line, stdout=subprocess.PIPE, shell=True)
         p.wait()
 
-import getpass
-import subprocess
 def check_root():
     print("We need sudo access for later")
     sudo_pass = getpass.getpass()
-    sudo_test = subprocess.run( ("echo %s | sudo -S %s echo test" % (sudo_pass, sudo_pass)).split(), capture_output=True)
+    sudo_test = subprocess.run( ("echo %s | sudo -S echo test" % sudo_pass).split(), capture_output=True)
     if sudo_test.returncode :
         print("Was unable to obtain root, exiting script")
         exit()
