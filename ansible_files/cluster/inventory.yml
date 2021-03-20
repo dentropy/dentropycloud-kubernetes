@@ -7,11 +7,14 @@ k3s_cluster:
       # sudo_pass: testpass
       ansible_host: 10.10.9.2
       ansible_python_interpreter: /usr/bin/python3
+      k3s_control_node: true
     kube-1:
       ansible_user: ansible
       ansible_host: 10.10.9.3
       ansible_python_interpreter: /usr/bin/python3
+      k3s_control_node: true
     kube-2:
       ansible_user: ansible
       ansible_host: 10.10.9.4
       ansible_python_interpreter: /usr/bin/python3
+      k3s_control_node: true
