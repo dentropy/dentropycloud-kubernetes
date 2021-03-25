@@ -206,12 +206,12 @@ def install_k3s():
         # p = subprocess.Popen("sudo usermod -a -G root %s" % getpass.getuser(), stdout=subprocess.PIPE, shell=True) 
         # p.wait()
         print("Configuring SSH for localhost")
-        if not os.path.exists("/home/dentropy/.ssh/ddaemon"):
+        if not os.path.exists("%s/.ssh/ddaemon" % os.environ['HOME']):
             print("Generating Dentropy Daemon ssh key")
-            p = subprocess.Popen('ssh-keygen -f /home/dentropy/.ssh/ddaemon -P ""', stdout=subprocess.PIPE, shell=True) 
+            p = subprocess.Popen('ssh-keygen -f %s/.ssh/ddaemon -P ""' % os.environ['HOME'], stdout=subprocess.PIPE, shell=True) 
             p.wait()
         print("Adding Dentropy Daemon ssh key to ssh-agent")
-        p = subprocess.Popen('ssh-add /home/dentropy/.ssh/ddaemon', stdout=subprocess.PIPE, shell=True) 
+        p = subprocess.Popen('ssh-add %s/.ssh/ddaemon' % os.environ['HOME'], stdout=subprocess.PIPE, shell=True) 
         p.wait()
         print("Copying Dentropy Daemon ssh key to host")
         p = subprocess.Popen('ssh-copy-id -f %s@127.0.0.1' % getpass.getuser(), stdout=subprocess.PIPE, shell=True) 
