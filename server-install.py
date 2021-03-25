@@ -103,8 +103,7 @@ def export_env_file(env_vars):
     dot_env_string = ""
     for env_var in env_vars:
         if type(env_vars[env_var]) == type(True):
-            if env_vars[env_var]:
-                dot_env_string += "%s=%s\n" % (env_var, str(env_vars[env_var]).lower())
+            dot_env_string += "%s=%s\n" % (env_var, str(env_vars[env_var]).lower())
         else:
             dot_env_string += "%s=%s\n" % (env_var, env_vars[env_var])
     text_file = open("%s/Dentropycloud-Kubernetes/.env" % os.environ['HOME'], "w")
@@ -393,17 +392,17 @@ def install_cert_manager():
         print("cert-manager already installed")
 
 def configure_certificate_issuer():
-    if env_vars["USE_SELF_SIGNED"]:
+    if env_vars["CERT_ISSUER"] == "selfsigned-issuer":
         print("Configuring certificate issuer")
         bash_script = "sudo kubectl apply -f %s/Dentropycloud-Kubernetes/kube-apps/cert-manager/cert-issuer-self-signed.yaml " % os.environ['HOME']
         run_bash_string(bash_script)
     else:
         print("Creating let's encrypt issuer")
-        text_file = open("D:/data.txt", "r")
+        text_file = open("%s/Dentropycloud-Kubernetes/kube-apps/cert-manager/cert-issuer-traefik-ingress.yaml" % os.environ['HOME'], "r")
         data = text_file.read()
         text_file.close()
-        new_file = text_file.replace("personinternet@protonmail.com", env_vars["LETSENCRYPT_EMAIL"])
-        text_file = open("sample.txt", "w")
+        new_file = data.replace("personinternet@protonmail.com", env_vars["LETSENCRYPT_EMAIL"])
+        text_file = open("%s/Dentropycloud-Kubernetes/kube-apps/cert-manager/cert-issuer-traefik-ingress.yaml" % os.environ['HOME'], "w")
         n = text_file.write(new_file)
         text_file.close()
         bash_script = "sudo kubectl apply -f %s/Dentropycloud-Kubernetes/cert-issuer-traefik-ingress.yaml" % os.environ['HOME']
