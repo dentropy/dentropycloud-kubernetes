@@ -118,10 +118,12 @@ def get_env_from_user():
         env_vars["USE_SELF_SIGNED"] = yes_or_no("Would you like to use self signed certificates ")
         if env_vars["USE_SELF_SIGNED"]:
             input_confirmed = not yes_or_no("Please confirm that you want to use a self signed certificates ")
+            env_vars["CERT_ISSUER"] = "selfsigned-issuer"
         else:
             env_vars["LETSENCRYPT_EMAIL"] = input("Please enter email you would like to use with Let's Encrypt: ")
             # TODO check valid email
             input_confirmed = not yes_or_no("Please confirm you want to use signed ceritificates from Lets Encrypt and that %s is your email " % env_vars["LETSENCRYPT_EMAIL"])
+            env_vars["CERT_ISSUER"] = "letsencrypt-staging"
     input_confirmed = True
     while input_confirmed:
         env_vars["SINGLE_NODE"] = yes_or_no("Are you instlling kubernetes on just this node")
@@ -151,6 +153,7 @@ def get_env_from_user():
             input_confirmed = not yes_or_no("Please confirm that you do NOT want to install Trilium Notes")
     # TODO Meta Confirmation with every setting printed out
     export_env_file(env_vars)
+    return env_vars
 
 def configure_nfs_server():
     # TODO test NFS server Install
@@ -195,8 +198,8 @@ def configure_nfs_server():
 
 
 def install_k3s():
-    test_kubectl = subprocess.check_output("echo %s | sudo -S kubectl get nodes" % sudo_pass, shell=True)
-    if "Ready".lower() in str(test_kubectl.lower()):
+    #test_kubectl = subprocess.check_output("echo %s | sudo -S kubectl get nodes" % sudo_pass, shell=True)
+    if which("kubectl") != None:
         print("Kubernetes cluster already configured")
     else:
         print("Installing k3s on localhost")
@@ -231,12 +234,12 @@ def install_k3s():
         print(ansible_inventory_yml, file=open("%s/kubernetes-playbook/inventory.yml" % os.environ['HOME'], 'w'))
         ansible_cluster_yaml = '''
         - name: Build a single node k3s cluster with etcd datastore
-        hosts: k3s_cluster
-        vars:
+          hosts: k3s_cluster
+          vars:
             k3s_release_version: v1.19
             k3s_become_for_all: true
             k3s_etcd_datastore: true
-        roles:
+          roles:
             - role: xanmanning.k3s
         '''
         print(ansible_cluster_yaml, file=open("%s/kubernetes-playbook/cluster.yml" % os.environ['HOME'], 'w'))
@@ -255,7 +258,7 @@ def install_k3s():
         p = subprocess.Popen(ansible_install, stdout=subprocess.PIPE, shell=True) 
         p.wait()
         if not os.path.exists("%s/.kube" % os.environ['HOME']):
-            os.mkdir("%s/.kube" % gos.environ['HOME'])
+            os.mkdir("%s/.kube" % os.environ['HOME'])
             bash_script = '''
             sudo cp /etc/rancher/k3s/k3s.yaml %s/.kube/config
             sudo chown %s:%s %s/.kube/config
@@ -350,7 +353,7 @@ def install_cert_manager():
 def configure_certificate_issuer():
     if env_vars["USE_SELF_SIGNED"]:
         print("Configuring certificate issuer")
-        bash_script = "sudo kubectl apply -f %sDentropycloud-Kubernetes/cert-issuer-self-signed.yaml " % getpass.getuser()
+        bash_script = "sudo kubectl apply -f %s/Dentropycloud-Kubernetes/kube-apps/cert-manager/cert-issuer-self-signed.yaml " % os.environ['HOME']
         run_bash_string(bash_script)
     else:
         print("Creating let's encrypt issuer")
@@ -366,20 +369,21 @@ def configure_certificate_issuer():
 
 def install_trilium_notes():
     if env_vars["INSTALL_TRILIUM_NOTES"]:
-        install_trilium_command = 'cd %s/Dentropycloud-Kubernetes/kube-apps/trilium-notes && bash install-trilium-notes.sh' % os.environ['HOME']
-        subprocess.run(install_trilium_command.split(), capture_output=True)
         print("Trilium Notes Installing")
+        install_trilium_command = 'cd %s/Dentropycloud-Kubernetes/kube-apps/trilium-notes/ && bash install-trilium-notes.sh' % os.environ['HOME']
+        run_bash_string(install_trilium_command)
+        print("Trilium notes installed")
 
 sudo_pass = check_root()
+install_dependencies()
 env_vars = None
 if os.path.exists("%s/Dentropycloud-Kubernetes/.env" % os.environ['HOME']):
     env_vars = import_env_file("%s/Dentropycloud-Kubernetes/.env" % os.environ['HOME'])
 else:
     env_vars = get_env_from_user()
-install_dependencies()
 configure_nfs_server()
 install_k3s()
-install_kubectl()
+# install_kubectl()
 install_helm()
 install_nfs_provisioner()
 install_cert_manager()
