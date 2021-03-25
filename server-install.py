@@ -371,12 +371,12 @@ def install_trilium_notes():
         print("Trilium Notes Installing")
 
 sudo_pass = check_root()
-install_dependencies()
 env_vars = None
 if os.path.exists("%s/Dentropycloud-Kubernetes/.env" % os.environ['HOME']):
     env_vars = import_env_file("%s/Dentropycloud-Kubernetes/.env" % os.environ['HOME'])
 else:
     env_vars = get_env_from_user()
+install_dependencies()
 configure_nfs_server()
 install_k3s()
 install_kubectl()
