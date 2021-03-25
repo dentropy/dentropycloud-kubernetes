@@ -4,6 +4,7 @@ import os
 import subprocess
 import getpass
 from shutil import which
+import time
 
 logs = [] # TODO log all subprocesses to this list
 
@@ -336,33 +337,38 @@ def install_cert_manager():
             --version v1.2.0 \
             --set installCRDs=true
         echo "Waiting for cert-manager to configure itself"
-        sleep 30
         # Wait 30 seconds
         # kubectl get pods --namespace cert-manager
         # Should return a bunch of pods
         '''
         run_bash_string(bash_script)
+        print("Waiting 30 seconds for cert-manager to install")
+        time.sleep(30)
     else:
         print("cert-manager already installed")
 
 def configure_certificate_issuer():
-    # TODO can't use bash for this
-    '''
-    echo "Configuring certificate issuer"
-    cd Dentropycloud-Kubernetes/kube-apps/cert-manager
-    if $USE_SELF_SIGNED; then
-        echo "Creating self signed issuer"
-        sudo kubectl apply -f ./cert-issuer-self-signed.yaml 
-    else
-        echo "Creating let's encrypt issuer"
-        sed -i -e "s/personinternet@protonmail.com/$LETSENCRYPT_EMAIL/g" ./cert-issuer-traefik-ingress.yaml
-        sudo kubectl apply -f ./cert-issuer-traefik-ingress.yaml
-    fi
-    '''
+    if env_vars["USE_SELF_SIGNED"]:
+        print("Configuring certificate issuer")
+        bash_script = "sudo kubectl apply -f /home/%s/Dentropycloud-Kubernetes/cert-issuer-self-signed.yaml " % getpass.getuser()
+        run_bash_string(bash_script)
+    else:
+        print("Creating let's encrypt issuer")
+        text_file = open("D:/data.txt", "r")
+        data = text_file.read()
+        text_file.close()
+        new_file = text_file.replace("personinternet@protonmail.com", env_vars["LETSENCRYPT_EMAIL"])
+        text_file = open("sample.txt", "w")
+        n = text_file.write(new_file)
+        text_file.close()
+        bash_script = "sudo kubectl apply -f /home/%s/Dentropycloud-Kubernetes/cert-issuer-traefik-ingress.yaml"
+
 
 def install_trilium_notes():
-    install_trilium_command = 'cd /home/%s/Dentropycloud-Kubernetes/kube-apps/trilium-notes && bash install-trilium-notes.sh' % getpass.getuser()
-    subprocess.run(install_trilium_command.split(), capture_output=True)
+    if env_vars["INSTALL_TRILIUM_NOTES"]:
+        install_trilium_command = 'cd /home/%s/Dentropycloud-Kubernetes/kube-apps/trilium-notes && bash install-trilium-notes.sh' % getpass.getuser()
+        subprocess.run(install_trilium_command.split(), capture_output=True)
+        print("Trilium Notes Installing")
 
 sudo_pass = check_root()
 install_dependencies()
@@ -373,8 +379,9 @@ else:
     env_vars = get_env_from_user()
 configure_nfs_server()
 install_k3s()
-# install_kubectl()
+install_kubectl()
 install_helm()
 install_nfs_provisioner()
 install_cert_manager()
-# configure_certificate_issuer()
+configure_certificate_issuer()
+install_trilium_notes()
