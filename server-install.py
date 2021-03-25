@@ -37,8 +37,8 @@ def check_root():
 
 def install_dependencies():
     print("Checking dependencies")
-    if os.path.exists('/home/%s/.local/bin' % getpass.getuser()):
-        os.environ['PATH'] += ':' + '/home/%s/.local/bin' % getpass.getuser()
+    if os.path.exists('%s/.local/bin' % os.environ['HOME']):
+        os.environ['PATH'] += ':' + '%s/.local/bin' % os.environ['HOME']
     print("Checking for git")
     # TODO support installing git on other operating systems
     if which("git") == None:
@@ -54,7 +54,7 @@ def install_dependencies():
         p = subprocess.Popen('wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py --user', stdout=subprocess.PIPE, shell=True) # Install pip
         p.wait()
         subprocess.Popen('rm get-pip.py', shell=True)
-        os.environ['PATH'] += ':' + '/home/%s/.local/bin' % getpass.getuser()
+        os.environ['PATH'] += ':' + '%s/.local/bin' % os.environ['HOME']
     else:
         print("pip3 is already installed")
     if which("ansible") == None:
@@ -66,15 +66,15 @@ def install_dependencies():
     print("Installing ansible role xanmanning.k3s")
     p = subprocess.Popen('ansible-galaxy install xanmanning.k3s', stdout=subprocess.PIPE, shell=True) # Install ansible role xanmanning.k3s
     p.wait()
-    if os.path.exists("/home/%s/Dentropycloud-Kubernetes"):
+    if os.path.exists("%s/Dentropycloud-Kubernetes" % os.environ['HOME']):
         print("Pulling Dentropycloud-Kubernetes git repo")
-        pull_command = "cd /home/%s/Dentropycloud-Kubernetes/ && git pull" % getpass.getuser()
+        pull_command = "cd %s/Dentropycloud-Kubernetes/ && git pull" % os.environ['HOME']
         p = subprocess.Popen(pull_command, stdout=subprocess.PIPE, shell=True) # Install pip
         p.wait()
         print("Done pulling")
     else:
         print("Cloning Dentropycloud-Kubernetes repo")
-        clone_repo_command = "git clone https://gitlab.com/dentropy/Dentropycloud-Kubernetes.git /home/%s/Dentropycloud-Kubernetes" % getpass.getuser()
+        clone_repo_command = "git clone https://gitlab.com/dentropy/Dentropycloud-Kubernetes.git %s/Dentropycloud-Kubernetes" % os.environ['HOME']
         p = subprocess.Popen(clone_repo_command, stdout=subprocess.PIPE, shell=True) # Install pip
         p.wait()
         print("Done cloning")
@@ -101,7 +101,7 @@ def export_env_file(env_vars):
                 dot_env_string += "%s=%s\n" % (env_var, str(env_vars[env_var]).lower())
         else:
             dot_env_string += "%s=%s\n" % (env_var, env_vars[env_var])
-    text_file = open("/home/%s/Dentropycloud-Kubernetes/.env" % getpass.getuser(), "w")
+    text_file = open("%s/Dentropycloud-Kubernetes/.env" % os.environ['HOME'], "w")
     n = text_file.write(dot_env_string)
     text_file.close()
     return env_vars
@@ -217,8 +217,8 @@ def install_k3s():
         # p = subprocess.Popen('sudo chmod -R 775 /usr/local/bin', stdout=subprocess.PIPE, shell=True) 
         # p.wait()
         print("Configuring ansible playbook")
-        if not os.path.exists("/home/%s/kubernetes-playbook" % getpass.getuser()):
-            os.mkdir("/home/%s/kubernetes-playbook" % getpass.getuser())
+        if not os.path.exists("%s/kubernetes-playbook" % os.environ['HOME']):
+            os.mkdir("%s/kubernetes-playbook" % os.environ['HOME'])
         ansible_inventory_yml = '''
         k3s_cluster:
             hosts:
@@ -228,7 +228,7 @@ def install_k3s():
                     ansible_sudo_pass: 
                     ansible_python_interpreter: /usr/bin/python3
         ''' % getpass.getuser()
-        print(ansible_inventory_yml, file=open("/home/%s/kubernetes-playbook/inventory.yml" % getpass.getuser(), 'w'))
+        print(ansible_inventory_yml, file=open("%s/kubernetes-playbook/inventory.yml" % os.environ['HOME'], 'w'))
         ansible_cluster_yaml = '''
         - name: Build a single node k3s cluster with etcd datastore
         hosts: k3s_cluster
@@ -239,9 +239,9 @@ def install_k3s():
         roles:
             - role: xanmanning.k3s
         '''
-        print(ansible_cluster_yaml, file=open("/home/%s/kubernetes-playbook/cluster.yml" % getpass.getuser(), 'w'))
+        print(ansible_cluster_yaml, file=open("%s/kubernetes-playbook/cluster.yml" % os.environ['HOME'], 'w'))
         print("Testing if ansible can connect to host")
-        anisble_test = "ansible -i /home/%s/kubernetes-playbook/inventory.yml -m ping all" % getpass.getuser()
+        anisble_test = "ansible -i %s/kubernetes-playbook/inventory.yml -m ping all" % os.environ['HOME']
         p = subprocess.Popen(anisble_test, stdout=subprocess.PIPE, shell=True) 
         p.wait()
         if "SUCCESS" in str(p.stdout.read()):
@@ -250,22 +250,22 @@ def install_k3s():
             print("We have a problem ansible did not connect")
             # TODO troubleshoot here
         print("Installing k3s")
-        ansible_install = 'ansible-playbook -i /home/%s/kubernetes-playbook/inventory.yml /home/%s/kubernetes-playbook/cluster.yml --extra-vars "ansible_sudo_pass=%s"' % (getpass.getuser(), getpass.getuser(), sudo_pass)
+        ansible_install = 'ansible-playbook -i %s/kubernetes-playbook/inventory.yml %s/kubernetes-playbook/cluster.yml --extra-vars "ansible_sudo_pass=%s"' % (os.environ['HOME'], os.environ['HOME'], sudo_pass)
         # TODO actually test installing k3s on localhost
         p = subprocess.Popen(ansible_install, stdout=subprocess.PIPE, shell=True) 
         p.wait()
-        if not os.path.exists("/home/%s/.kube" % getpass.getuser()):
-            os.mkdir("/home/%s/.kube" % getpass.getuser())
+        if not os.path.exists("%s/.kube" % os.environ['HOME']):
+            os.mkdir("%s/.kube" % gos.environ['HOME'])
             bash_script = '''
-            sudo cp /etc/rancher/k3s/k3s.yaml /home/%s/.kube/config
-            sudo chown %s:%s /home/%s/.kube/config
-            ''' % (getpass.getuser(),getpass.getuser(),getpass.getuser(),getpass.getuser())
+            sudo cp /etc/rancher/k3s/k3s.yaml %s/.kube/config
+            sudo chown %s:%s %s/.kube/config
+            ''' % (os.environ['HOME'],getpass.getuser(),getpass.getuser(),os.environ['HOME'])
             run_bash_string(bash_script)
-        elif not os.path.exists("/home/%s/.kube/config" % getpass.getuser()): 
+        elif not os.path.exists("%s/.kube/config" % getpass.getuser()): 
             bash_script = '''
-            sudo cp /etc/rancher/k3s/k3s.yaml /home/%s/.kube/config
-            sudo chown %s:%s /home/%s/.kube/config
-            ''' % (getpass.getuser(),getpass.getuser(),getpass.getuser(),getpass.getuser())
+            sudo cp /etc/rancher/k3s/k3s.yaml %s/.kube/config
+            sudo chown %s:%s %s/.kube/config
+            ''' % (os.environ['HOME'],getpass.getuser(),getpass.getuser(),os.environ['HOME'])
             run_bash_string(bash_script)
         print("k3s installed")
         
@@ -350,7 +350,7 @@ def install_cert_manager():
 def configure_certificate_issuer():
     if env_vars["USE_SELF_SIGNED"]:
         print("Configuring certificate issuer")
-        bash_script = "sudo kubectl apply -f /home/%s/Dentropycloud-Kubernetes/cert-issuer-self-signed.yaml " % getpass.getuser()
+        bash_script = "sudo kubectl apply -f %sDentropycloud-Kubernetes/cert-issuer-self-signed.yaml " % getpass.getuser()
         run_bash_string(bash_script)
     else:
         print("Creating let's encrypt issuer")
@@ -361,20 +361,20 @@ def configure_certificate_issuer():
         text_file = open("sample.txt", "w")
         n = text_file.write(new_file)
         text_file.close()
-        bash_script = "sudo kubectl apply -f /home/%s/Dentropycloud-Kubernetes/cert-issuer-traefik-ingress.yaml"
+        bash_script = "sudo kubectl apply -f %s/Dentropycloud-Kubernetes/cert-issuer-traefik-ingress.yaml" % os.environ['HOME']
 
 
 def install_trilium_notes():
     if env_vars["INSTALL_TRILIUM_NOTES"]:
-        install_trilium_command = 'cd /home/%s/Dentropycloud-Kubernetes/kube-apps/trilium-notes && bash install-trilium-notes.sh' % getpass.getuser()
+        install_trilium_command = 'cd %s/Dentropycloud-Kubernetes/kube-apps/trilium-notes && bash install-trilium-notes.sh' % os.environ['HOME']
         subprocess.run(install_trilium_command.split(), capture_output=True)
         print("Trilium Notes Installing")
 
 sudo_pass = check_root()
 install_dependencies()
 env_vars = None
-if os.path.exists("/home/%s/Dentropycloud-Kubernetes/.env" % getpass.getuser()):
-    env_vars = import_env_file("/home/%s/Dentropycloud-Kubernetes/.env" % getpass.getuser())
+if os.path.exists("%s/Dentropycloud-Kubernetes/.env" % os.environ['HOME']):
+    env_vars = import_env_file("%s/Dentropycloud-Kubernetes/.env" % os.environ['HOME'])
 else:
     env_vars = get_env_from_user()
 configure_nfs_server()
