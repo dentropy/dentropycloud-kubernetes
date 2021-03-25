@@ -51,7 +51,13 @@ def install_dependencies():
         print("git is already installed")
     if which("pip3") == None:
         print("Installing pip3")
-        p = subprocess.Popen('wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py --user', stdout=subprocess.PIPE, shell=True) # Install pip
+        if getpass.getuser() == "root":
+            p = subprocess.Popen('wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py', stdout=subprocess.PIPE, shell=True)
+            p.wait()
+        else:
+            p = subprocess.Popen('wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py --user', stdout=subprocess.PIPE, shell=True)
+            p.wait()
+        p = subprocess.Popen("export PATH=$PATH:%s/.local/bin >> %s/.profile" % (os.environ['HOME'], os.environ['HOME']), stdout=subprocess.PIPE, shell=True)
         p.wait()
         subprocess.Popen('rm get-pip.py', shell=True)
         os.environ['PATH'] += ':' + '%s/.local/bin' % os.environ['HOME']
@@ -210,48 +216,84 @@ def install_k3s():
             print("Generating Dentropy Daemon ssh key")
             p = subprocess.Popen('ssh-keygen -f %s/.ssh/ddaemon -P ""' % os.environ['HOME'], stdout=subprocess.PIPE, shell=True) 
             p.wait()
+        p = subprocess.Popen('cat %s/.ssh/ddaemon.pub >> %s/.ssh/authorized_keys' % (os.environ['HOME'], os.environ['HOME']), stdout=subprocess.PIPE, shell=True) 
+        p.wait()
         print("Adding Dentropy Daemon ssh key to ssh-agent")
-        p = subprocess.Popen('ssh-add %s/.ssh/ddaemon' % os.environ['HOME'], stdout=subprocess.PIPE, shell=True) 
+        p = subprocess.Popen('eval `ssh-agent -s` && ssh-add %s/.ssh/ddaemon' % os.environ['HOME'], stdout=subprocess.PIPE, shell=True) 
         p.wait()
-        print("Copying Dentropy Daemon ssh key to host")
-        p = subprocess.Popen('ssh-copy-id -f %s@127.0.0.1' % getpass.getuser(), stdout=subprocess.PIPE, shell=True) 
-        p.wait()
+        # print("Copying Dentropy Daemon ssh key to host")
+        # p = subprocess.Popen('ssh-copy-id -f %s@127.0.0.1' % getpass.getuser(), stdout=subprocess.PIPE, shell=True) 
+        # p.wait()
         print("Fixing some permissions")
         # p = subprocess.Popen('sudo chmod -R 775 /usr/local/bin', stdout=subprocess.PIPE, shell=True) 
         # p.wait()
         print("Configuring ansible playbook")
         if not os.path.exists("%s/kubernetes-playbook" % os.environ['HOME']):
             os.mkdir("%s/kubernetes-playbook" % os.environ['HOME'])
-        ansible_inventory_yml = '''
-        k3s_cluster:
-            hosts:
+        if getpass.getuser() == "root":
+            ansible_inventory_yml = '''
+            k3s_cluster:
+              hosts:
                 kube-0:
-                    ansible_user: %s
-                    ansible_host: 127.0.0.1
-                    ansible_sudo_pass: 
-                    ansible_python_interpreter: /usr/bin/python3
-        ''' % getpass.getuser()
-        print(ansible_inventory_yml, file=open("%s/kubernetes-playbook/inventory.yml" % os.environ['HOME'], 'w'))
-        ansible_cluster_yaml = '''
-        - name: Build a single node k3s cluster with etcd datastore
-          hosts: k3s_cluster
-          vars:
-            k3s_release_version: v1.19
-            k3s_become_for_all: true
-            k3s_etcd_datastore: true
-          roles:
-            - role: xanmanning.k3s
-        '''
-        print(ansible_cluster_yaml, file=open("%s/kubernetes-playbook/cluster.yml" % os.environ['HOME'], 'w'))
-        print("Testing if ansible can connect to host")
-        anisble_test = "ansible -i %s/kubernetes-playbook/inventory.yml -m ping all" % os.environ['HOME']
-        p = subprocess.Popen(anisble_test, stdout=subprocess.PIPE, shell=True) 
-        p.wait()
-        if "SUCCESS" in str(p.stdout.read()):
-            print("Ansible sucessfully connected to host")
+                  ansible_user: %s
+                  ansible_host: 127.0.0.1
+                  ansible_python_interpreter: /usr/bin/python3
+                  ansible_ssh_private_key_file: %s/.ssh/ddaemon
+                  k3s_control_node: true
+            ''' % ( getpass.getuser(), os.environ['HOME'] )
+            print(ansible_inventory_yml, file=open("%s/kubernetes-playbook/inventory.yml" % os.environ['HOME'], 'w'))
+            ansible_cluster_yaml = '''
+            - name: Build a single node k3s cluster with etcd datastore
+              hosts: k3s_cluster
+              vars:
+                k3s_release_version: v1.19
+                k3s_etcd_datastore: true
+              roles:
+                - role: xanmanning.k3s
+            '''
+            print(ansible_cluster_yaml, file=open("%s/kubernetes-playbook/cluster.yml" % os.environ['HOME'], 'w'))
+            print("Testing if ansible can connect to host")
+            anisble_test = "ansible -i %s/kubernetes-playbook/inventory.yml -m ping all" % os.environ['HOME']
+            p = subprocess.Popen(anisble_test, stdout=subprocess.PIPE, shell=True) 
+            p.wait()
+            if "SUCCESS" in str(p.stdout.read()):
+                print("Ansible sucessfully connected to host")
+            else:
+                print("We have a problem ansible did not connect")
+                exit()
+                # TODO troubleshoot here
         else:
-            print("We have a problem ansible did not connect")
-            # TODO troubleshoot here
+            ansible_inventory_yml = '''
+            k3s_cluster:
+              hosts:
+                kube-0:
+                  ansible_user: %s
+                  ansible_host: 127.0.0.1
+                  ansible_sudo_pass: 
+                  ansible_python_interpreter: /usr/bin/python3
+                  ansible_ssh_private_key_file: %s/.ssh/ddaemon
+            ''' % ( getpass.getuser(), os.environ['HOME'] )
+            print(ansible_inventory_yml, file=open("%s/kubernetes-playbook/inventory.yml" % os.environ['HOME'], 'w'))
+            ansible_cluster_yaml = '''
+            - name: Build a single node k3s cluster with etcd datastore
+              hosts: k3s_cluster
+              vars:
+                k3s_release_version: v1.19
+                k3s_become_for_all: true
+                k3s_etcd_datastore: true
+              roles:
+                - role: xanmanning.k3s
+            '''
+            print(ansible_cluster_yaml, file=open("%s/kubernetes-playbook/cluster.yml" % os.environ['HOME'], 'w'))
+            print("Testing if ansible can connect to host")
+            anisble_test = "ansible -i %s/kubernetes-playbook/inventory.yml -m ping all" % os.environ['HOME']
+            p = subprocess.Popen(anisble_test, stdout=subprocess.PIPE, shell=True) 
+            p.wait()
+            if "SUCCESS" in str(p.stdout.read()):
+                print("Ansible sucessfully connected to host")
+            else:
+                print("We have a problem ansible did not connect")
+                # TODO troubleshoot here
         print("Installing k3s")
         ansible_install = 'ansible-playbook -i %s/kubernetes-playbook/inventory.yml %s/kubernetes-playbook/cluster.yml --extra-vars "ansible_sudo_pass=%s"' % (os.environ['HOME'], os.environ['HOME'], sudo_pass)
         # TODO actually test installing k3s on localhost
