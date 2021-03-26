@@ -128,7 +128,7 @@ def get_env_from_user():
             env_vars["LETSENCRYPT_EMAIL"] = input("Please enter email you would like to use with Let's Encrypt: ")
             # TODO check valid email
             input_confirmed = not yes_or_no("Please confirm you want to use signed ceritificates from Lets Encrypt and that %s is your email " % env_vars["LETSENCRYPT_EMAIL"])
-            env_vars["CERT_ISSUER"] = "letsencrypt-staging"
+            env_vars["CERT_ISSUER"] = "letsencrypt-prod"
     input_confirmed = True
     while input_confirmed:
         env_vars["SINGLE_NODE"] = yes_or_no("Are you instlling kubernetes on just this node")
