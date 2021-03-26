@@ -34,7 +34,7 @@ ingress:
     - host: nextcloud.${YOUR_DOMAIN_NAME}
       paths: ["/"]
   tls:
-    - secretName: trilium-cert-tls
+    - secretName: nextcloud-cert-tls
       hosts:
         - nextcloud.${YOUR_DOMAIN_NAME}
 
@@ -224,7 +224,7 @@ mariadb:
       size: 8Gi
 
 postgresql:
-  enabled: false
+  enabled: failureThreshold
   global:
     postgresql:
       postgresqlUsername: nextcloud
