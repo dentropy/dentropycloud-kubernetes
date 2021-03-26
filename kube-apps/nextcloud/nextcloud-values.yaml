@@ -17,41 +17,26 @@ replicaCount: 1
 ## Allowing use of ingress controllers
 ## ref: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ##
-ingress:
-  enabled: false
-  annotations: {}
-  #  nginx.ingress.kubernetes.io/proxy-body-size: 4G
-  #  kubernetes.io/tls-acme: "true"
-  #  cert-manager.io/cluster-issuer: letsencrypt-prod
-  #  nginx.ingress.kubernetes.io/server-snippet: |-
-  #    server_tokens off;
-  #    proxy_hide_header X-Powered-By;
 
-  #    rewrite ^/.well-known/webfinger /public.php?service=webfinger last;
-  #    rewrite ^/.well-known/host-meta /public.php?service=host-meta last;
-  #    rewrite ^/.well-known/host-meta.json /public.php?service=host-meta-json;
-  #    location = /.well-known/carddav {
-  #      return 301 $scheme://$host/remote.php/dav;
-  #    }
-  #    location = /.well-known/caldav {
-  #      return 301 $scheme://$host/remote.php/dav;
-  #    }
-  #    location = /robots.txt {
-  #      allow all;
-  #      log_not_found off;
-  #      access_log off;
-  #    }
-  #    location ~ ^/(?:build|tests|config|lib|3rdparty|templates|data)/ {
-  #      deny all;
-  #    }
-  #    location ~ ^/(?:autotest|occ|issue|indie|db_|console) {
-  #      deny all;
-  #    }
-  # tls:
-  #   - secretName: nextcloud-tls
-  #     hosts:
-  #       - nextcloud.kube.home
-  labels: {}
+
+ingress:
+  enabled: true
+  annotations:
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/frontend-entry-points: http,https
+    traefik.ingress.kubernetes.io/redirect-entry-point: https
+    traefik.ingress.kubernetes.io/redirect-permanent: "true"
+    cert-manager.io/issuer: ${CERT_ISSUER}
+    external-dns.alpha.kubernetes.io/hostname: nextcloud.${YOUR_DOMAIN_NAME}
+  hosts:
+    - host: nextcloud.${YOUR_DOMAIN_NAME}
+      paths: ["/"]
+  tls:
+    - secretName: trilium-cert-tls
+      hosts:
+        - nextcloud.${YOUR_DOMAIN_NAME}
 
 
 # Allow configuration of lifecycle hooks
