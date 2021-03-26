@@ -202,7 +202,7 @@ externalDatabase:
 ##
 mariadb:
   ## Whether to deploy a mariadb server to satisfy the applications database requirements. To use an external database set this to false and configure the externalDatabase parameters
-  enabled: true
+  enabled: false
 
   db:
     name: nextcloud
@@ -224,7 +224,7 @@ mariadb:
       size: 8Gi
 
 postgresql:
-  enabled: false
+  enabled: true
   global:
     postgresql:
       postgresqlUsername: nextcloud
@@ -234,6 +234,7 @@ postgresql:
     enabled: true
     # storageClass: ""
     storageClass: "nfs-client"
+    size: 8Gi
 
 redis:
   enabled: false
