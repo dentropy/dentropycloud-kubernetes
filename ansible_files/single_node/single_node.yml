@@ -1,8 +1,0 @@
----
-
-- name: Build a single node k3s cluster
-  hosts: kube-0
-  vars:
-    k3s_become_for_all: true
-  roles:
-    - role: xanmanning.k3s
