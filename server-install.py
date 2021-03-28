@@ -359,9 +359,9 @@ def install_nfs_provisioner():
         helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
         helm repo update
         helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
-            --set nfs.server=127.0.0.1 \
-            --set nfs.path=/mnt/nfsdir/provisioner
-        '''
+            --set nfs.server=%s \
+            --set nfs.path=%s
+        ''' % (env_vars["NFS_SHARE_IP_ADDRESS"], env_vars["NFS_SHARE_PATH"])
         run_bash_string(bash_script)
     else:
         print("nfs-subdir-external-provisioner already installed")
