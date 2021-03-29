@@ -246,6 +246,8 @@ def install_k3s():
               hosts: k3s_cluster
               vars:
                 k3s_release_version: v1.19
+                k3s_use_unsupported_config: true
+                k3s_etcd_datastore: true
                 k3s_etcd_datastore: true
               roles:
                 - role: xanmanning.k3s
@@ -278,6 +280,7 @@ def install_k3s():
               hosts: k3s_cluster
               vars:
                 k3s_release_version: v1.19
+                k3s_use_unsupported_config: true
                 k3s_become_for_all: true
                 k3s_etcd_datastore: true
               roles:
